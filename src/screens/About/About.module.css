@@ -1,0 +1,70 @@
+.about {
+  text-align: center;
+  padding-top: 0.429rem;
+
+  img {
+    width: 6.857rem;
+    height: 6.857rem;
+    margin-bottom: 0.571rem;
+  }
+
+  h1 {
+    font-size: 1.714rem;
+    margin: 0;
+  }
+}
+
+.dev {
+  color: var(--subtle);
+  margin: 0.143rem 0 0.571rem;
+}
+
+.pill {
+  display: inline-block;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 0.071rem 0.857rem;
+  font-weight: 600;
+  font-size: 0.929rem;
+}
+
+.comments {
+  color: var(--subtle);
+  max-width: 21.429rem;
+  margin: 0.857rem auto 1.143rem;
+}
+
+.links {
+  text-align: left;
+}
+
+.linkRow {
+  display: flex;
+  align-items: center;
+  gap: 0.857rem;
+  width: 100%;
+  padding: 0.857rem 1rem;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: var(--hover);
+  }
+
+  .label {
+    flex: 1;
+    text-align: left;
+  }
+
+  .ext {
+    color: var(--subtle);
+  }
+}

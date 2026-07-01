@@ -1,0 +1,32 @@
+import { getCurrentWebview } from "@tauri-apps/api/webview";
+import Settings from "./screens/Settings";
+import About from "./screens/About";
+import Shortcuts from "./screens/Shortcuts";
+import Lock from "./screens/Lock";
+
+/**
+ * The custom build renders one React screen per frameless secondary window,
+ * picked by its label. The main WhatsApp window has no React (its titlebar is
+ * injected into the page by the backend; see src-tauri/src/main.rs).
+ */
+export default function App() {
+  let label = "settings";
+
+  try {
+    label = getCurrentWebview().label;
+  } catch {
+    // running outside Tauri (e.g. plain `vite`) -> default to settings
+  }
+
+  switch (label) {
+    case "about":
+      return <About />;
+    case "shortcuts":
+      return <Shortcuts />;
+    case "lock":
+      return <Lock />;
+    case "settings":
+    default:
+      return <Settings />;
+  }
+}

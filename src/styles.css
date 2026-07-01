@@ -1,0 +1,68 @@
+/* Global stylesheet: design tokens, theme variables and resets. Component and
+   screen styles live in their own *.module.css files. */
+
+:root {
+  --accent: #00a884;
+  --accent-fg: #ffffff;
+  --radius: 0.857rem;
+
+  /* Titlebar fallbacks so it renders correctly before applyTheme() runs. */
+  --titlebar: #161717;
+  --titlebar-fg: #ffffff;
+
+  /* Dark defaults (overridden by [data-theme]). */
+  --bg: #1d1d1f;
+  --fg: #ffffff;
+  --card: #2a2a2c;
+  --border: rgba(255, 255, 255, 0.1);
+  --hover: rgba(255, 255, 255, 0.06);
+  --subtle: rgba(255, 255, 255, 0.55);
+  --danger: #ff7b72;
+
+  font-family: system-ui, "Cantarell", "Segoe UI", sans-serif;
+  font-size: 14px;
+
+  &[data-theme="light"] {
+    color-scheme: light;
+    --bg: #fafafb;
+    --fg: #1a1a1a;
+    --card: #ffffff;
+    --border: rgba(0, 0, 0, 0.1);
+    --subtle: rgba(0, 0, 0, 0.55);
+    --hover: rgba(0, 0, 0, 0.04);
+    --danger: #e01b24;
+  }
+
+  &[data-theme="dark"] {
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  /* Transparent: the OS window itself is transparent (see window builders in
+     src-tauri), so each screen's own rounded root paints the opaque
+     background and the corners outside it show real desktop transparency. */
+  background: transparent;
+  color: var(--fg);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Form elements inherit typography by default. */
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}

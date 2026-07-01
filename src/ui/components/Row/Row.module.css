@@ -1,0 +1,32 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.857rem;
+  padding: 0.857rem 1rem;
+  border-bottom: 1px solid var(--border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .rowText {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .rowTitle {
+    font-weight: 500;
+  }
+
+  .rowSubtitle {
+    color: var(--subtle);
+    font-size: 0.893rem;
+    margin-top: 0.143rem;
+  }
+
+  .rowControl {
+    display: flex;
+    align-items: center;
+    gap: 0.429rem;
+  }
+}

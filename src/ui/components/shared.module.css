@@ -1,0 +1,32 @@
+/* Generic form/control classes used directly by screens via `ui`, not owned
+   by a single component. */
+
+.btn {
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 0.571rem;
+  padding: 0.429rem 0.857rem;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--hover);
+  }
+
+  &.accent {
+    background: var(--accent);
+    color: var(--accent-fg);
+    border-color: transparent;
+  }
+
+  &.danger {
+    color: var(--danger);
+  }
+}
+
+.input {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  border-radius: 0.571rem;
+  padding: 0.429rem 0.714rem;
+  min-width: 10rem;
+}
