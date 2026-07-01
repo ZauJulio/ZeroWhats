@@ -1,0 +1,15 @@
+.select {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  border-radius: 0.571rem;
+  padding: 0.429rem 0.714rem;
+  min-width: 10rem;
+  cursor: pointer;
+
+  /* The native popup list ignores the control's bg on some platforms, giving a
+     gray-on-white look; style the options explicitly for proper contrast. */
+  option {
+    background: var(--card);
+    color: var(--fg);
+  }
+}

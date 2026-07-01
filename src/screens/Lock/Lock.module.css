@@ -1,0 +1,64 @@
+.lock {
+  height: 100vh;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  background: var(--bg);
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+}
+
+.lockBox {
+  width: 20rem;
+
+  .lockIcon {
+    color: var(--accent);
+    margin-bottom: 0.571rem;
+  }
+
+  h1 {
+    margin: 0.286rem 0 0;
+    font-size: 1.571rem;
+  }
+
+  p {
+    color: var(--subtle);
+    margin: 0.143rem 0 1.286rem;
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.714rem;
+  }
+
+  /* The shared .input control, centered for the lock prompt. */
+  input {
+    text-align: center;
+
+    /* Hide the placeholder once the user focuses the field. */
+    &:focus::placeholder {
+      color: transparent;
+    }
+  }
+}
+
+.lockError {
+  color: var(--danger);
+  font-size: 0.929rem;
+}
+
+.lockForgot {
+  background: none;
+  border: none;
+  color: var(--subtle);
+  cursor: pointer;
+  font-size: 0.929rem;
+  text-decoration: underline;
+}
+
+.unlockBtn {
+  font-weight: 600;
+}

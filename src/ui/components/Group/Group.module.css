@@ -1,0 +1,16 @@
+.group {
+  margin-bottom: 1.286rem;
+
+  .groupTitle {
+    font-size: 1.071rem;
+    font-weight: 700;
+    margin: 0 0 0.571rem 0.286rem;
+  }
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
