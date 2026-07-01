@@ -1,6 +1,6 @@
 id: com.zaujulio.zerowhats
 runtime: org.gnome.Platform
-runtime-version: "47"
+runtime-version: "48"
 sdk: org.gnome.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.rust-stable
@@ -27,6 +27,48 @@ build-options:
     XDG_CACHE_HOME: /run/build/zerowhats/flatpak-node/cache
 
 modules:
+  # ── Tray icon runtime dependencies ───────────────────────────────────────────
+  - name: libdbusmenu
+    buildsystem: autotools
+    build-options:
+      cflags: "-Wno-error"
+    config-opts:
+      - --with-gtk=3
+      - --disable-tests
+      - --disable-gtk-doc
+      - --disable-dump-objects
+      - --disable-introspection
+      - --disable-vala
+    sources:
+      - type: archive
+        url: https://launchpad.net/libdbusmenu/16.04/16.04.0/+download/libdbusmenu-16.04.0.tar.gz
+        sha256: b9cc4a2acd74509435892823607d966d424bd9ad5d0b00938f27240a1bfa878a
+
+  - name: libayatana-indicator
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DFLAVOUR_GTK3=ON
+      - -DENABLE_BINDINGS_MONO=OFF
+      - -DENABLE_BINDINGS_VALA=OFF
+      - -DENABLE_IDO=OFF
+    sources:
+      - type: archive
+        url: https://github.com/AyatanaIndicators/libayatana-indicator/archive/refs/tags/0.9.4.tar.gz
+        sha256: a18d3c682e29afd77db24366f8475b26bda22b0e16ff569a2ec71cd6eb4eac95
+
+  - name: libayatana-appindicator
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DFLAVOUR_GTK3=ON
+      - -DENABLE_BINDINGS_MONO=OFF
+      - -DENABLE_BINDINGS_VALA=OFF
+      - -DENABLE_IDO=OFF
+    sources:
+      - type: archive
+        url: https://github.com/AyatanaIndicators/libayatana-appindicator/archive/refs/tags/0.5.92.tar.gz
+        sha256: adedcf160dae7547971d475b42062cab278d54ec075537e6958ffdbf2d996857
+
+  # ── Node SDK ──────────────────────────────────────────────────────────────────
   # Install Node SDK outside the build sandbox so npm is accessible at install
   # time (flatpak-builder copies it to /app/node, accessible at runtime too).
   - name: node
