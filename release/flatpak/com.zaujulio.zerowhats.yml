@@ -38,16 +38,21 @@ modules:
         sha256: 67c74d94196b153b774ab9f89b2fa6c6ba79352407037c8c14d5aeb334e959cd
 
   - name: libdbusmenu
-    buildsystem: autotools
+    buildsystem: simple
     build-options:
       cflags: "-Wno-error"
-    config-opts:
-      - --with-gtk=3
-      - --disable-tests
-      - --disable-gtk-doc
-      - --disable-dump-objects
-      - --disable-introspection
-      - --disable-vala
+      env:
+        DBUSMENUDUMPER_CFLAGS: " "
+        DBUSMENUDUMPER_LIBS: " "
+        HAVE_VALGRIND_FALSE: "#"
+        HAVE_VALGRIND_TRUE: ""
+    build-commands:
+      - ./configure --prefix=/app --with-gtk=3 --disable-tests --disable-gtk-doc
+          --disable-introspection --disable-vala
+      - make -j$(nproc) -C libdbusmenu-glib
+      - make install -C libdbusmenu-glib
+      - make -j$(nproc) -C libdbusmenu-gtk
+      - make install -C libdbusmenu-gtk
     sources:
       - type: archive
         url: https://launchpad.net/libdbusmenu/16.04/16.04.0/+download/libdbusmenu-16.04.0.tar.gz
