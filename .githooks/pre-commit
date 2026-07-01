@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Formats and lints staged files before committing.
+#   - TypeScript/JavaScript: oxfmt (format) + oxlint (lint)
+#   - Rust: cargo fmt
+# Reformatted files are re-staged. Note: a file staged with unstaged hunks will
+# be staged in full after formatting (stage whole files to avoid surprises).
+set -euo pipefail
+
+staged() { git diff --cached --name-only --diff-filter=ACM -- "$@"; }
+
+# --- TypeScript / JavaScript ---
+mapfile -t ts_files < <(staged '*.ts' '*.tsx' '*.js' '*.jsx' '*.mjs' '*.cjs')
+if [ ${#ts_files[@]} -gt 0 ]; then
+  echo "• oxfmt (${#ts_files[@]} file(s))"
+  bunx oxfmt "${ts_files[@]}"
+  echo "• oxlint"
+  bunx oxlint "${ts_files[@]}"
+  git add -- "${ts_files[@]}"
+fi
+
+# --- Rust ---
+mapfile -t rs_files < <(staged '*.rs')
+if [ ${#rs_files[@]} -gt 0 ]; then
+  echo "• cargo fmt"
+  (cd src-tauri && cargo fmt)
+  git add -- "${rs_files[@]}"
+fi
+
+echo "✓ pre-commit checks passed"

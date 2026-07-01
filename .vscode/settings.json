@@ -1,0 +1,15 @@
+{
+  "workbench.colorCustomizations": {
+    "commandCenter.border": "#e7e7e799",
+    "tab.activeBorder": "#755dc2",
+    "titleBar.activeBackground": "#5a41ab",
+    "titleBar.activeForeground": "#e7e7e7",
+    "titleBar.inactiveBackground": "#5a41ab99",
+    "titleBar.inactiveForeground": "#e7e7e799"
+  },
+  "peacock.color": "#5a41ab",
+  "cSpell.words": [
+    "zerowhats",
+    "DMABUF"
+  ]
+}

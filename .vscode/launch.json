@@ -1,0 +1,40 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug ZeroWhats (Tauri Backend)",
+      "cargo": {
+        "args": [
+          "build",
+          "--manifest-path=${workspaceFolder}/src-tauri/Cargo.toml"
+        ]
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}/src-tauri",
+      "preLaunchTask": "ui:dev"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug ZeroWhats (Release)",
+      "cargo": {
+        "args": [
+          "build",
+          "--release",
+          "--manifest-path=${workspaceFolder}/src-tauri/Cargo.toml"
+        ]
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}/src-tauri",
+      "preLaunchTask": "ui:build"
+    },
+    {
+      "type": "lldb",
+      "request": "attach",
+      "name": "Attach to ZeroWhats",
+      "pid": "${command:pickMyProcess}"
+    }
+  ]
+}
