@@ -1,0 +1,7 @@
+{
+  "bundle": {
+    "windows": {
+      "digestAlgorithm": "sha256"
+    }
+  }
+}

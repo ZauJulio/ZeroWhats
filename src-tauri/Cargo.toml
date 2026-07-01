@@ -1,0 +1,37 @@
+[package]
+name = "zerowhats"
+version = "1.0.0"
+description = "ZeroWhats — a privacy-first WhatsApp Web desktop client"
+authors = ["ZauJulio"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+argon2 = "0.5"
+rand_core = { version = "0.6", features = ["getrandom"] }
+log = "0.4"
+tauri-plugin-dialog = "2.7.1"
+tauri-plugin-autostart = "2.5.1"
+tauri-plugin-log = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-window-state = "2"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-single-instance = "2"
+
+# Optimized for a small, fast binary: the Rust side does little CPU work (WebKit
+# does the rendering), so we trade compile time for size. opt-level "s" keeps it
+# small without the runtime cost of "z"; LTO + a single codegen unit + abort-on-
+# panic + stripped symbols shave the rest.
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

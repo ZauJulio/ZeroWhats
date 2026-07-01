@@ -1,0 +1,17 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "whatsapp-remote",
+  "description": "Minimal grant for the remote WhatsApp Web origin embedded in `main`: window controls used by the injected titlebar/fullscreen polyfill, plus emitting the fixed zw:// events the Rust side listens for. Tauri only applies these permissions to a remote-URL webview when the capability declares a matching `remote` block — this is the ONLY capability that should declare one for whatsapp.com.",
+  "windows": ["main"],
+  "remote": {
+    "urls": ["https://web.whatsapp.com", "https://*.whatsapp.com"]
+  },
+  "permissions": [
+    "core:window:allow-start-dragging",
+    "core:window:allow-minimize",
+    "core:window:allow-close",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-set-fullscreen",
+    "core:event:allow-emit"
+  ]
+}
