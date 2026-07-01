@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=ZeroWhats
+GenericName=WhatsApp Client
+Comment=A privacy-first WhatsApp Web desktop client
+Exec=zerowhats %u
+Icon=com.zaujulio.zerowhats
+Terminal=false
+Categories=Network;InstantMessaging;Chat;
+Keywords=whatsapp;chat;messaging;
+StartupNotify=true
+StartupWMClass=ZeroWhats
