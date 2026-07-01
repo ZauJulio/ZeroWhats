@@ -1,0 +1,22 @@
+PackageIdentifier: ZauJulio.ZeroWhats
+PackageVersion: 1.0.0
+PackageLocale: en-US
+Publisher: ZauJulio
+PublisherUrl: https://github.com/ZauJulio
+PublisherSupportUrl: https://github.com/ZauJulio/ZeroWhats/issues
+PackageName: ZeroWhats
+PackageUrl: https://github.com/ZauJulio/ZeroWhats
+License: MIT
+LicenseUrl: https://github.com/ZauJulio/ZeroWhats/blob/main/LICENSE
+Copyright: Copyright (c) ZauJulio
+ShortDescription: A minimalist WhatsApp Web desktop client for Linux, macOS, and Windows.
+Description: |-
+  ZeroWhats is a privacy-first WhatsApp Web desktop client. Features include
+  native notifications, app lock with optional auto-lock on inactivity, an
+  unread-message counter on the tray icon, proxy support, and no telemetry.
+Tags:
+  - whatsapp
+  - messaging
+  - chat
+ManifestType: locale
+ManifestVersion: 1.6.0
