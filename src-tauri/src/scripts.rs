@@ -1,0 +1,51 @@
+//! JavaScript injected into the WhatsApp Web page.
+//!
+//! Each script lives in its own `web/*.js` file (compiled in with `include_str!`)
+//! so the page logic stays real, lintable JavaScript instead of giant Rust
+//! string literals. They are registered as initialization scripts on the main
+//! window in `main.rs`, in the order below, after [`bootstrap`].
+
+/// Clips the page into a rounded shape so the (transparent) OS window shows
+/// rounded corners. Must run before the in-page titlebar so its `html`
+/// transform is in place when the titlebar's fixed bar is appended.
+pub const ROUNDED_CORNERS: &str = include_str!("web/rounded-corners.js");
+
+/// Hides WhatsApp's recurring "background sync" banner.
+pub const BACKGROUND_SYNC: &str = include_str!("web/background-sync.js");
+
+/// Redirects web notifications to native OS notifications.
+pub const NOTIFICATIONS: &str = include_str!("web/notifications.js");
+
+/// Mirrors WhatsApp's unread count onto the tray (`set_unread`).
+pub const UNREAD_BADGE: &str = include_str!("web/unread-badge.js");
+
+/// App-scoped inactivity auto-lock. Reads `window.__ZW.autoLockMinutes`.
+pub const AUTO_LOCK: &str = include_str!("web/auto-lock.js");
+
+/// The in-page custom titlebar (hamburger menu + window controls).
+pub const TITLEBAR: &str = include_str!("web/titlebar.js");
+
+/// Routes external links (clicks / window.open) to the system browser.
+pub const LINKS: &str = include_str!("web/links.js");
+
+/// Find-in-page overlay (Ctrl/Cmd+F).
+pub const FIND: &str = include_str!("web/find.js");
+
+/// Bridges the HTML5 Fullscreen API to the native window.
+pub const FULLSCREEN: &str = include_str!("web/fullscreen.js");
+
+/// Logs WhatsApp out and wipes its storage. Eval'd on demand (not an init
+/// script) by the non-Linux "forgot password" recovery.
+pub const WIPE_SESSION: &str = include_str!("web/wipe-session.js");
+
+/// The first script to run: seeds `window.__ZW` with the config the other
+/// scripts read, and primes WhatsApp's persisted theme before the page boots.
+pub fn bootstrap(wa_theme: &str, auto_lock_minutes: u32, has_password: bool) -> String {
+    include_str!("web/bootstrap.js")
+        .replace("\"__ZW_THEME__\"", &format!("{wa_theme:?}"))
+        .replace(
+            "\"__ZW_AUTO_LOCK_MINUTES__\"",
+            &auto_lock_minutes.to_string(),
+        )
+        .replace("\"__ZW_HAS_PASSWORD__\"", &has_password.to_string())
+}

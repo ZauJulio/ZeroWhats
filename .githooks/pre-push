@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Full build + checks before pushing. Slower than pre-commit by design.
+#   - oxlint (lint) + oxfmt --check (format)
+#   - frontend build (tsc + vite)
+#   - cargo check (backend type/borrow check)
+set -euo pipefail
+
+echo "▶ pre-push: build + check"
+
+echo "• oxlint"
+bunx oxlint
+
+echo "• oxfmt --check"
+bunx oxfmt --check src
+
+echo "• frontend build (tsc + vite)"
+bun run build
+
+echo "• cargo check"
+(cd src-tauri && cargo check)
+
+echo "✓ pre-push checks passed"

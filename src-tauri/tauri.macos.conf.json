@@ -1,0 +1,11 @@
+{
+  "bundle": {
+    "macOS": {
+      "minimumSystemVersion": "11.0",
+      "entitlements": "entitlements.plist",
+      "infoPlist": "Info.plist",
+      "hardenedRuntime": true,
+      "signingIdentity": "-"
+    }
+  }
+}
