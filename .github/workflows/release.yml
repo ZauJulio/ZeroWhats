@@ -259,11 +259,23 @@ jobs:
           $msi     = "$base/ZeroWhats_${version}_x64_en-US.msi"
           $exe     = "$base/ZeroWhats_${version}_x64-setup.exe"
           iwr https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+
+          # Try `update` first (package already registered in winget-pkgs).
+          # Falls back to `new` for the very first release.
+          $exitCode = 0
           .\wingetcreate.exe update ZauJulio.ZeroWhats `
             --version $version `
             --urls $msi $exe `
             --submit `
             --token $env:WINGET_TOKEN
+          $exitCode = $LASTEXITCODE
+
+          if ($exitCode -ne 0) {
+            Write-Host "Package not found in winget-pkgs — submitting as new package."
+            .\wingetcreate.exe new $msi $exe `
+              --submit `
+              --token $env:WINGET_TOKEN
+          }
 
   # ---------------------------------------------------------------------------
   # Flathub — pushes an updated manifest to the flathub/com.zaujulio.zerowhats
