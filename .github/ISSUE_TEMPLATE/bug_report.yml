@@ -1,0 +1,42 @@
+name: Bug report
+description: Report something that isn't working
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug, including what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open …
+        2. Click …
+        3. See …
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Linux
+        - macOS
+        - Windows
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Desktop environment / version
+      placeholder: "e.g. GNOME 46 (Wayland), ZeroWhats 1.0.0"
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant terminal output (run from a terminal to capture it).
+      render: shell

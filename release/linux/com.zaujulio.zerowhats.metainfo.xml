@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.zaujulio.zerowhats</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>ZeroWhats</name>
+  <summary>A privacy-first WhatsApp Web desktop client</summary>
+  <description>
+    <p>
+      ZeroWhats is a minimalist, privacy-first WhatsApp Web desktop client for
+      Linux, macOS and Windows. It wraps WhatsApp Web in a clean native window
+      with a custom titlebar and adds:
+    </p>
+    <ul>
+      <li>Native OS notifications (no browser prompts, no MPRIS pollution)</li>
+      <li>An app lock with optional auto-lock on inactivity</li>
+      <li>An unread-message counter on the tray icon</li>
+      <li>No telemetry</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">com.zaujulio.zerowhats.desktop</launchable>
+
+  <url type="homepage">https://github.com/ZauJulio/ZeroWhats</url>
+  <url type="bugtracker">https://github.com/ZauJulio/ZeroWhats/issues</url>
+  <url type="vcs-browser">https://github.com/ZauJulio/ZeroWhats</url>
+
+  <developer id="com.zaujulio">
+    <name>ZauJulio</name>
+  </developer>
+
+  <!-- OARS: WhatsApp is a chat platform — social-chat = intense -->
+  <content_rating type="oars-1.1">
+    <content_attribute id="social-chat">intense</content_attribute>
+  </content_rating>
+
+  <!--
+    TODO: Replace these placeholder URLs with real screenshots before submitting
+    to Flathub. Flathub requires at least one screenshot with a minimum width of
+    624 px. Upload PNGs to a stable URL (e.g. the GitHub releases page or a
+    dedicated /screenshots branch in the repo) and update the <image> tags.
+
+    Suggested shots:
+      1. Main chat window (light theme)
+      2. Main chat window (dark theme)
+      3. App-lock screen
+      4. Tray-icon unread counter
+  -->
+  <screenshots>
+    <screenshot type="default">
+      <caption>ZeroWhats main window</caption>
+      <image type="source" width="1280" height="800">
+        https://raw.githubusercontent.com/ZauJulio/ZeroWhats/main/release/linux/screenshots/main.png
+      </image>
+    </screenshot>
+    <screenshot>
+      <caption>App lock screen</caption>
+      <image type="source" width="1280" height="800">
+        https://raw.githubusercontent.com/ZauJulio/ZeroWhats/main/release/linux/screenshots/lock.png
+      </image>
+    </screenshot>
+  </screenshots>
+
+  <releases>
+    <release version="1.0.0" date="2026-06-30">
+      <description>
+        <p>Initial release.</p>
+      </description>
+    </release>
+  </releases>
+</component>
