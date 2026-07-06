@@ -206,6 +206,11 @@
           } else if (key === "/") {
             e.preventDefault();
             emitAction("shortcuts");
+          } else if (key === "w") {
+            // Mirror the titlebar close button: the CloseRequested handler
+            // hides (or locks) the window instead of quitting the app.
+            e.preventDefault();
+            currentWindow().close();
           }
         },
         true,
