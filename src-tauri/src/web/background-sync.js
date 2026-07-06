@@ -1,4 +1,6 @@
-// Hides WhatsApp Web's recurring "Turn on background sync" banner.
+// Hides WhatsApp Web's recurring "Turn on background sync" banner, plus the
+// "Download WhatsApp for <OS>" desktop-app promo banner (we already are a
+// desktop app).
 //
 // The banner is a small element that always enters as a freshly-added node, so
 // we only look at added nodes — never the whole document. Crucially we guard
@@ -19,7 +21,13 @@
     return (
       t.includes("segundo plano") ||
       t.includes("background sync") ||
-      (t.includes("sincroniza") && t.includes("plano"))
+      (t.includes("sincroniza") && t.includes("plano")) ||
+      // "Download WhatsApp for Mac/Windows" desktop-app promo (pt: "Baixe o
+      // WhatsApp para ..."). Match the download+brand pair to avoid catching
+      // unrelated content.
+      ((t.includes("download") || t.includes("baixe") || t.includes("baixar")) &&
+        t.includes("whatsapp") &&
+        (t.includes("mac") || t.includes("windows") || t.includes("desktop")))
     );
   };
 
