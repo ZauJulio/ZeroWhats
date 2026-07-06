@@ -22,6 +22,10 @@ pub const UNREAD_BADGE: &str = include_str!("web/unread-badge.js");
 /// App-scoped inactivity auto-lock. Reads `window.__ZW.autoLockMinutes`.
 pub const AUTO_LOCK: &str = include_str!("web/auto-lock.js");
 
+/// Exposes `window.__ZW.setBlur` so Rust can blur the page while the window is
+/// unfocused (privacy for screenshots / thumbnails / screen-sharing).
+pub const PRIVACY_BLUR: &str = include_str!("web/privacy-blur.js");
+
 /// The in-page custom titlebar (hamburger menu + window controls).
 pub const TITLEBAR: &str = include_str!("web/titlebar.js");
 
@@ -37,6 +41,10 @@ pub const FULLSCREEN: &str = include_str!("web/fullscreen.js");
 /// Logs WhatsApp out and wipes its storage. Eval'd on demand (not an init
 /// script) by the non-Linux "forgot password" recovery.
 pub const WIPE_SESSION: &str = include_str!("web/wipe-session.js");
+
+/// Injected in minimal mode to disable WebRTC/media APIs that can inflate the
+/// WebKit process memory footprint.
+pub const DISABLE_MEDIA: &str = include_str!("web/disable-media.js");
 
 /// The first script to run: seeds `window.__ZW` with the config the other
 /// scripts read, and primes WhatsApp's persisted theme before the page boots.

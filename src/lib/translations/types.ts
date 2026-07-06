@@ -34,8 +34,13 @@ export interface Strings {
   downloadFolder: string;
   choose: string;
   notifications: string;
-  mute: string;
-  muteDesc: string;
+  notifPrivacy: string;
+  notifPrivacyDesc: string;
+  notifPrivacyFull: string;
+  notifPrivacyGeneric: string;
+  notifPrivacyHidden: string;
+  hideOnUnfocus: string;
+  hideOnUnfocusDesc: string;
   advanced: string;
   hwAccel: string;
   hwAccelDesc: string;
