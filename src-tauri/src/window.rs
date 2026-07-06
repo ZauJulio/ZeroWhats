@@ -80,8 +80,19 @@ pub fn transparent_bg() -> tauri::window::Color {
 pub const MAIN_LABEL: &str = "main";
 
 const WHATSAPP_URL: &str = "https://web.whatsapp.com";
-// A desktop UA so WhatsApp Web serves the full desktop client.
-const DESKTOP_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36";
+// Default desktop UA so WhatsApp Web serves the full desktop client. We
+// allow switching to a lighter (mobile) UA at runtime by setting the
+// `ZW_LIGHT_UA` environment variable when launching the app. This is a
+// quick way to test whether a lighter frontend reduces the WebKit process
+// memory footprint.
+fn chosen_user_agent() -> &'static str {
+    if std::env::var("ZW_LIGHT_UA").is_ok() {
+        // Mobile UA (smaller surface area in many web apps).
+        "Mozilla/5.0 (Linux; Android 12; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36"
+    } else {
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+    }
+}
 
 /// Builds the single frameless WhatsApp window with the page scripts injected.
 /// One webview means input works on every platform (unlike a stacked second
@@ -92,7 +103,10 @@ pub fn build_main(app: &AppHandle, cfg: &Config) -> tauri::Result<()> {
     let nav_app = app.clone();
     let dl_app = app.clone();
 
-    WebviewWindowBuilder::new(
+    let minimal = std::env::var("ZW_MINIMAL").is_ok();
+    let force_show = std::env::var("ZW_FORCE_SHOW").is_ok();
+
+    let mut builder = WebviewWindowBuilder::new(
         app,
         MAIN_LABEL,
         WebviewUrl::External(WHATSAPP_URL.parse().unwrap()),
@@ -113,8 +127,8 @@ pub fn build_main(app: &AppHandle, cfg: &Config) -> tauri::Result<()> {
     // paints). `web/rounded-corners.js` reveals it on the next macrotask
     // once the rounding stylesheet is in place — unless a password is set,
     // in which case the lock screen reveals it later instead.
-    .visible(false)
-    .user_agent(DESKTOP_USER_AGENT)
+    .visible(force_show)
+    .user_agent(&chosen_user_agent())
     .on_navigation(move |url| allow_navigation(&nav_app, url))
     // WhatsApp triggers its own downloads (blob/anchor); route them to the
     // configured folder so they actually save.
@@ -125,21 +139,41 @@ pub fn build_main(app: &AppHandle, cfg: &Config) -> tauri::Result<()> {
         }
         true
     })
-    .initialization_script(scripts::bootstrap(
+    ;
+
+    builder = builder.initialization_script(scripts::bootstrap(
         cfg.theme.wa_value(),
         auto_lock_minutes,
         start_locked,
-    ))
-    .initialization_script(scripts::ROUNDED_CORNERS)
-    .initialization_script(scripts::BACKGROUND_SYNC)
-    .initialization_script(scripts::NOTIFICATIONS)
-    .initialization_script(scripts::UNREAD_BADGE)
-    .initialization_script(scripts::AUTO_LOCK)
-    .initialization_script(scripts::LINKS)
-    .initialization_script(scripts::FIND)
-    .initialization_script(scripts::FULLSCREEN)
-    .initialization_script(scripts::TITLEBAR)
-    .build()?;
+    ));
+
+    builder = builder.initialization_script(scripts::ROUNDED_CORNERS);
+
+    if !minimal {
+        // These add background work (sync, notifications, badges) — skip in
+        // minimal mode to reduce memory/CPU usage when testing.
+        builder = builder.initialization_script(scripts::BACKGROUND_SYNC);
+        builder = builder.initialization_script(scripts::NOTIFICATIONS);
+        builder = builder.initialization_script(scripts::UNREAD_BADGE);
+    }
+
+    if minimal {
+        // Inject a script that disables WebRTC/media APIs to avoid the web
+        // engine loading codec/gstreamer subsystems.
+        builder = builder.initialization_script(scripts::DISABLE_MEDIA);
+    }
+
+    builder = builder
+        .initialization_script(scripts::AUTO_LOCK)
+        .initialization_script(scripts::PRIVACY_BLUR)
+        .initialization_script(scripts::LINKS)
+        .initialization_script(scripts::FIND)
+        .initialization_script(scripts::FULLSCREEN)
+        .initialization_script(scripts::TITLEBAR);
+
+    // Finish building the window; `.build()` returns the created WebviewWindow.
+    let _ = builder.build()?;
+    log::info!("built main window (label={}) minimal={}", MAIN_LABEL, minimal);
     Ok(())
 }
 
@@ -181,6 +215,23 @@ pub fn sync_has_password(app: &AppHandle, has_password: bool) {
     }
 }
 
+/// Blurs (or clears) the WhatsApp page for privacy when the main window loses
+/// focus. Reads the live `hide_content_on_unfocus` setting, so disabling it takes
+/// effect immediately. A `focused` window is always cleared regardless of the
+/// setting (nothing to hide while it's on top).
+pub fn apply_unfocus_blur(app: &AppHandle, focused: bool) {
+    let cfg = Config::load(&config_path(app));
+    let blur = !focused && cfg.hide_content_on_unfocus;
+
+    log::debug!("apply_unfocus_blur: focused={focused} blur={blur}");
+
+    if let Some(main) = app.get_webview_window(MAIN_LABEL) {
+        let _ = main.eval(format!(
+            "if (window.__ZW && window.__ZW.setBlur) window.__ZW.setBlur({blur});"
+        ));
+    }
+}
+
 /// Pushes the WhatsApp theme into the page and reloads so it takes effect.
 pub fn apply_theme(app: &AppHandle, theme: Theme) {
     if let Some(main) = app.get_webview_window(MAIN_LABEL) {
@@ -199,10 +250,14 @@ pub fn show_main(app: &AppHandle) {
         return;
     }
 
+    log::info!("show_main() called");
     if let Some(main) = app.get_webview_window(MAIN_LABEL) {
+        log::info!("show_main: found main webview, unminimizing and showing");
         let _ = main.unminimize();
         let _ = main.show();
         let _ = main.set_focus();
+    } else {
+        log::warn!("show_main: main webview not found");
     }
 }
 
@@ -214,6 +269,8 @@ fn open_react_window(app: &AppHandle, label: &str, title: &str, size: (f64, f64)
         let _ = win.set_focus();
         return;
     }
+
+    log::info!("open_react_window: creating window label={} title={}", label, title);
 
     // Created hidden; the React screen calls `show()` once it has painted, so the
     // window appears fully rendered instead of flashing white → background →

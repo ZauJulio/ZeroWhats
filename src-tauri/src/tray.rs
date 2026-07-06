@@ -11,18 +11,16 @@ use crate::{lock, notification, window};
 /// Stable id used to look the tray up again (e.g. from `set_unread`).
 const TRAY_ID: &str = "tray";
 
-/// Embedded fallback for the tray icon. `default_window_icon()` is always
-/// `Some` in practice (the bundle always configures one), but a missing icon
-/// used to be a hard `.expect()` panic — this keeps the tray (and the rest of
-/// the app) alive instead.
-const FALLBACK_ICON: &[u8] = include_bytes!("../icons/32x32.png");
+/// The tray icon, embedded at 128×128. `default_window_icon()` resolves to the
+/// bundle's *first* icon (32×32), which is too small/low-res for the
+/// StatusNotifierItem pixmap path: GNOME's AppIndicator (notably under Flatpak)
+/// downgrades an undersized pixmap to a "…" placeholder. Passing an explicit
+/// larger pixmap renders correctly. The same base feeds `render_badge`, so the
+/// unread counter is drawn on the high-res icon too.
+const TRAY_ICON: &[u8] = include_bytes!("../icons/128x128.png");
 
-fn app_icon(app: &AppHandle) -> Image<'_> {
-    if let Some(icon) = app.default_window_icon() {
-        return icon.clone();
-    }
-    log::warn!("bundled window icon missing; using embedded fallback");
-    Image::from_bytes(FALLBACK_ICON).expect("embedded fallback icon is valid PNG bytes")
+fn app_icon(_app: &AppHandle) -> Image<'static> {
+    Image::from_bytes(TRAY_ICON).expect("embedded 128x128 tray icon is valid PNG bytes")
 }
 
 /// Builds the tray menu from the current config: "Mute" reflects the saved
@@ -37,7 +35,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         "mute",
         "Mute notifications",
         true,
-        cfg.mute_notifications,
+        cfg.notification_privacy.is_hidden(),
         None::<&str>,
     )?;
 
@@ -124,16 +122,16 @@ pub fn set_unread(app: &AppHandle, count: u32) {
         return;
     };
 
-    let base = app.default_window_icon().cloned();
+    // Base the badge on the same high-res tray icon (not the 32×32
+    // `default_window_icon`), so both the plain and badged states render
+    // crisply and avoid the AppIndicator "…" fallback.
+    let base = app_icon(app);
 
     if count > 0 {
-        if let Some(base) = &base {
-            let _ = tray.set_icon(Some(render_badge(base, count)));
-        }
-
+        let _ = tray.set_icon(Some(render_badge(&base, count)));
         let _ = tray.set_tooltip(Some(format!("ZeroWhats — {count} unread")));
     } else {
-        let _ = tray.set_icon(base);
+        let _ = tray.set_icon(Some(base));
         let _ = tray.set_tooltip(Some("ZeroWhats"));
     }
 }

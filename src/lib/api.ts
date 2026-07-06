@@ -4,6 +4,9 @@ import { invoke } from "@tauri-apps/api/core";
 
 export type Theme = "system" | "light" | "dark";
 
+/** How much of a notification's content is shown natively. */
+export type NotificationPrivacy = "full" | "generic" | "hidden";
+
 export interface ConfigView {
   theme: Theme;
   locale: string | null;
@@ -11,7 +14,8 @@ export interface ConfigView {
   proxy_url: string;
   auto_download: boolean;
   download_path: string | null;
-  mute_notifications: boolean;
+  notification_privacy: NotificationPrivacy;
+  hide_content_on_unfocus: boolean;
   cache_enabled: boolean;
   auto_start: boolean;
   hardware_acceleration: boolean;

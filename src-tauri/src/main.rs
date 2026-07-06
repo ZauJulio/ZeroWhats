@@ -86,8 +86,12 @@ fn main() {
             Ok(())
         })
         .on_window_event(|win, event| {
-            if let WindowEvent::CloseRequested { api, .. } = event {
-                if win.label() == window::MAIN_LABEL {
+            if win.label() != window::MAIN_LABEL {
+                return;
+            }
+
+            match event {
+                WindowEvent::CloseRequested { api, .. } => {
                     let app = win.app_handle();
                     let cfg = Config::load(&config_path(app));
                     if cfg.lock_on_close && cfg.password_hash.is_some() {
@@ -97,6 +101,12 @@ fn main() {
                     }
                     api.prevent_close();
                 }
+                // Blur the page when focus leaves the window (privacy for
+                // screenshots / thumbnails / screen-sharing); clear it on return.
+                WindowEvent::Focused(focused) => {
+                    window::apply_unfocus_blur(win.app_handle(), *focused);
+                }
+                _ => {}
             }
         })
         .run(tauri::generate_context!())
@@ -197,6 +207,9 @@ struct UnreadPayload {
 struct NotifyPayload {
     title: Option<String>,
     body: Option<String>,
+    /// The sender avatar as a `data:` URL (see `web/notifications.js`), or
+    /// `None` when unavailable.
+    icon: Option<String>,
 }
 
 #[derive(serde::Deserialize)]
@@ -235,7 +248,7 @@ fn register_web_events(app: &tauri::AppHandle) {
         if let Ok(payload) = serde_json::from_str::<NotifyPayload>(event.payload()) {
             let handle = handle.clone();
             let _ = handle.clone().run_on_main_thread(move || {
-                notification::notify(&handle, payload.title, payload.body)
+                notification::notify(&handle, payload.title, payload.body, payload.icon)
             });
         }
     });

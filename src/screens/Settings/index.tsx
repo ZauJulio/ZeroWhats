@@ -2,7 +2,15 @@ import { useEffect, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { AppWindow, Group, Row, Toggle, Select, ui } from "../../ui/components";
 import { cx } from "../../lib/cx";
-import { ConfigView, Theme, getConfig, saveConfig, setPassword, setTheme } from "../../lib/api";
+import {
+  ConfigView,
+  NotificationPrivacy,
+  Theme,
+  getConfig,
+  saveConfig,
+  setPassword,
+  setTheme,
+} from "../../lib/api";
 import { applyTheme } from "../../lib/theme";
 import { useReveal } from "../../lib/window";
 import { t } from "../../lib/translations";
@@ -164,10 +172,22 @@ export default function Settings() {
       </Group>
 
       <Group title={t.notifications}>
-        <Row title={t.mute} subtitle={t.muteDesc}>
+        <Row title={t.notifPrivacy} subtitle={t.notifPrivacyDesc}>
+          <Select<NotificationPrivacy>
+            value={cfg.notification_privacy}
+            onChange={(v) => update({ notification_privacy: v })}
+            options={[
+              { value: "full", label: t.notifPrivacyFull },
+              { value: "generic", label: t.notifPrivacyGeneric },
+              { value: "hidden", label: t.notifPrivacyHidden },
+            ]}
+          />
+        </Row>
+
+        <Row title={t.hideOnUnfocus} subtitle={t.hideOnUnfocusDesc}>
           <Toggle
-            checked={cfg.mute_notifications}
-            onChange={(v) => update({ mute_notifications: v })}
+            checked={cfg.hide_content_on_unfocus}
+            onChange={(v) => update({ hide_content_on_unfocus: v })}
           />
         </Row>
       </Group>

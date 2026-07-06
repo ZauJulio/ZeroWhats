@@ -1,6 +1,6 @@
 id: com.zaujulio.zerowhats
 runtime: org.gnome.Platform
-runtime-version: "48"
+runtime-version: "49"
 sdk: org.gnome.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.rust-stable
@@ -18,6 +18,18 @@ finish-args:
   - --talk-name=org.freedesktop.Notifications
   - --talk-name=org.kde.StatusNotifierWatcher
   - --filesystem=xdg-download
+  # Share the host runtime dir where the tray backend writes its icon PNG, so
+  # the absolute path it advertises to GNOME Shell resolves (else "…" shows).
+  - --filesystem=xdg-run/tray-icon:create
+  # Where the notification avatar PNG is written; shared with the host at the
+  # same path so the notification daemon can read it (else no sender photo).
+  - --filesystem=xdg-run/zerowhats:create
+  # WebKitGTK 2.44 (GNOME 48) nests its own bubblewrap sandbox inside Flatpak's;
+  # the inner sandbox blocks the IPC that Tauri's `tauri://localhost` custom URI
+  # scheme handler relies on, so the frameless React windows (Settings/About/
+  # Shortcuts) fail to load with "Could not connect to localhost". Disabling the
+  # redundant inner sandbox — Flatpak already confines the process — restores it.
+  - --env=WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1
 
 build-options:
   append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/node22/bin
@@ -118,7 +130,7 @@ modules:
         [source.vendored-sources]
         directory = "/run/build/zerowhats/cargo/vendor"
         EOF
-      - cargo build --release --manifest-path src-tauri/Cargo.toml
+      - cargo build --release --features custom-protocol --manifest-path src-tauri/Cargo.toml
 
       # ── Install ───────────────────────────────────────────────────────────
       - install -Dm755 src-tauri/target/release/zerowhats

@@ -8,10 +8,19 @@ edition = "2021"
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
+[features]
+# `cargo tauri build` sets this automatically; a bare `cargo build` (as the
+# Flatpak manifest runs) does not, and without it `tauri::is_dev()` returns
+# true — the app then loads the Vite dev URL (http://localhost:1420) instead of
+# the embedded assets over `tauri://localhost`, so every non-dev build must pass
+# `--features custom-protocol`.
+custom-protocol = ["tauri/custom-protocol"]
+
 [dependencies]
 tauri = { version = "2", features = ["tray-icon", "image-png"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+base64 = "0.22"
 argon2 = "0.5"
 rand_core = { version = "0.6", features = ["getrandom"] }
 log = "0.4"
@@ -24,6 +33,18 @@ tauri-plugin-window-state = "2"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-single-instance = "2"
+
+# Used directly on Linux so a notification click can focus the app: the
+# notification plugin discards notify-rust's action handle, so we drive it
+# ourselves there. Same version the plugin already resolves.
+[target.'cfg(target_os = "linux")'.dependencies]
+# `images` pulls in JPEG/PNG decoding so the sender avatar can be sent as an
+# inline `image-data` hint — GNOME Shell ignores per-notification icon *paths*
+# but honours `image-data`.
+notify-rust = { version = "4", features = ["images"] }
+
+[dev-dependencies]
+tempfile = "3"
 
 # Optimized for a small, fast binary: the Rust side does little CPU work (WebKit
 # does the rendering), so we trade compile time for size. opt-level "s" keeps it
