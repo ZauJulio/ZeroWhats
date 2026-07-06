@@ -51,13 +51,13 @@ you — and nothing it shouldn't:
 
 Grab the file for your platform from the [latest release](https://github.com/ZauJulio/ZeroWhats/releases):
 
-| OS | File | Notes |
-| --- | --- | --- |
-| **Linux** | `.AppImage` | Portable — `chmod +x` and run. |
-| **Linux** | `.deb` / `.rpm` | `sudo apt install ./ZeroWhats_*.deb` / `sudo dnf install ./*.rpm` |
-| **Linux** | Flatpak / Snap / AUR (`zerowhats-bin`) | See [`release/`](release/). |
-| **Windows** | `.msi` / `-setup.exe` | Uses the built-in WebView2. |
-| **macOS** | `.dmg` | Universal builds for Apple Silicon & Intel. |
+| OS          | File                                   | Notes                                                             |
+| ----------- | -------------------------------------- | ----------------------------------------------------------------- |
+| **Linux**   | `.AppImage`                            | Portable — `chmod +x` and run.                                    |
+| **Linux**   | `.deb` / `.rpm`                        | `sudo apt install ./ZeroWhats_*.deb` / `sudo dnf install ./*.rpm` |
+| **Linux**   | Flatpak / Snap / AUR (`zerowhats-bin`) | See [`release/`](release/).                                       |
+| **Windows** | `.msi` / `-setup.exe`                  | Uses the built-in WebView2.                                       |
+| **macOS**   | `.dmg`                                 | Universal builds for Apple Silicon & Intel.                       |
 
 > **Linux note:** like every Tauri app, ZeroWhats uses the system **WebKitGTK**
 > (`libwebkit2gtk-4.1`) and an AppIndicator tray. The `.deb`/`.rpm` declare these
@@ -68,9 +68,9 @@ Grab the file for your platform from the [latest release](https://github.com/Zau
 
 ## Where is my data?
 
-| What | Linux | macOS | Windows |
-| --- | --- | --- | --- |
-| **Settings** (`config.json`) | `~/.config/com.zaujulio.zerowhats/` | `~/Library/Application Support/com.zaujulio.zerowhats/` | `%APPDATA%\com.zaujulio.zerowhats\` |
+| What                                                      | Linux                                    | macOS                                                   | Windows                                  |
+| --------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------- | ---------------------------------------- |
+| **Settings** (`config.json`)                              | `~/.config/com.zaujulio.zerowhats/`      | `~/Library/Application Support/com.zaujulio.zerowhats/` | `%APPDATA%\com.zaujulio.zerowhats\`      |
 | **WhatsApp session** (cookies, IndexedDB, service worker) | `~/.local/share/com.zaujulio.zerowhats/` | `~/Library/Application Support/com.zaujulio.zerowhats/` | `%LOCALAPPDATA%\com.zaujulio.zerowhats\` |
 
 `config.json` holds your preferences and the Argon2id password **hash** (never the
