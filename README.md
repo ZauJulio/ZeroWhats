@@ -44,6 +44,17 @@ you — and nothing it shouldn't:
   WhatsApp; any other link opens in your real browser. Local UI runs under a
   strict CSP.
 - 🎨 **Light / dark / system theme**, for both the app chrome and WhatsApp.
+- ✍️ **Spell check.** Toggle it on and pick your dictionaries (English, Portuguese,
+  Spanish, French, German, Italian…) in Settings → Advanced. Misspellings are
+  underlined in the message box. On Linux this uses the system hunspell/enchant
+  dictionaries (shipped as package dependencies).
+- 📋 **Clipboard paste that actually works.** Paste screenshots *and* files or
+  images copied from your file manager straight into a chat — a workaround for a
+  long-standing WebKitGTK limitation on Linux.
+- 🖼️ **Stickers & emoji render correctly** on Linux by advertising a real WebKit
+  (Safari) user-agent, so WhatsApp serves the WebKit-tested code path.
+- 🪟 **Custom frameless window** with an in-page titlebar: maximize button,
+  double-click-to-maximize, and edge/corner resize grips.
 - 🪶 **Tiny & fast.** A size-optimized Rust binary and the system WebView — a
   fraction of an Electron app's footprint.
 

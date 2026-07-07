@@ -1,6 +1,6 @@
 [package]
 name = "zerowhats"
-version = "1.0.0"
+version = "1.1.0"
 description = "ZeroWhats — a privacy-first WhatsApp Web desktop client"
 authors = ["ZauJulio"]
 edition = "2021"
@@ -17,10 +17,15 @@ tauri-build = { version = "2", features = [] }
 custom-protocol = ["tauri/custom-protocol"]
 
 [dependencies]
-tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri = { version = "2", features = ["macos-private-api", "tray-icon", "image-png"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 base64 = "0.22"
+# Reads image data from the system clipboard, which WebKitGTK itself can't hand
+# to the page (WebKit bug #218519) — used by the clipboard-image paste bridge.
+arboard = "3"
+# Re-encode the clipboard's raw RGBA to PNG for the data URL sent to the page.
+png = "0.17"
 argon2 = "0.5"
 rand_core = { version = "0.6", features = ["getrandom"] }
 log = "0.4"
@@ -34,14 +39,14 @@ tauri-plugin-window-state = "2"
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-single-instance = "2"
 
-# Used directly on Linux so a notification click can focus the app: the
-# notification plugin discards notify-rust's action handle, so we drive it
-# ourselves there. Same version the plugin already resolves.
 [target.'cfg(target_os = "linux")'.dependencies]
 # `images` pulls in JPEG/PNG decoding so the sender avatar can be sent as an
 # inline `image-data` hint — GNOME Shell ignores per-notification icon *paths*
 # but honours `image-data`.
 notify-rust = { version = "4", features = ["images"] }
+# Reach the underlying WebKitWebView to toggle enchant spell check and set its
+# dictionaries (no Tauri API exposes this). Version matches what Tauri resolves.
+webkit2gtk = { version = "=2.0.2", features = ["v2_40"] }
 
 [dev-dependencies]
 tempfile = "3"

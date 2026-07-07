@@ -2,10 +2,28 @@
   "bundle": {
     "linux": {
       "deb": {
-        "depends": ["libwebkit2gtk-4.1-0", "libgtk-3-0", "libayatana-appindicator3-1"]
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "libgtk-3-0",
+          "libayatana-appindicator3-1",
+          "fonts-noto-color-emoji",
+          "hunspell-en-us",
+          "hunspell-pt-br",
+          "wl-clipboard"
+        ],
+        "recommends": ["hunspell-es", "hunspell-fr", "hunspell-de", "hunspell-it", "xclip"]
       },
       "rpm": {
-        "depends": ["webkit2gtk4.1", "gtk3", "libappindicator-gtk3"]
+        "depends": [
+          "webkit2gtk4.1",
+          "gtk3",
+          "libappindicator-gtk3",
+          "google-noto-emoji-color-fonts",
+          "hunspell-en",
+          "hunspell-pt-BR",
+          "wl-clipboard"
+        ],
+        "recommends": ["hunspell-es", "hunspell-fr", "hunspell-de", "hunspell-it", "xclip"]
       }
     }
   }

@@ -29,6 +29,12 @@ pub const PRIVACY_BLUR: &str = include_str!("web/privacy-blur.js");
 /// The in-page custom titlebar (hamburger menu + window controls).
 pub const TITLEBAR: &str = include_str!("web/titlebar.js");
 
+/// Edge/corner resize grips for the frameless (undecorated) main window.
+pub const RESIZE_HANDLES: &str = include_str!("web/resize-handles.js");
+
+/// Bridges clipboard-image paste (WebKitGTK can't hand images to the page).
+pub const CLIPBOARD_IMAGE: &str = include_str!("web/clipboard-image.js");
+
 /// Routes external links (clicks / window.open) to the system browser.
 pub const LINKS: &str = include_str!("web/links.js");
 
@@ -48,7 +54,12 @@ pub const DISABLE_MEDIA: &str = include_str!("web/disable-media.js");
 
 /// The first script to run: seeds `window.__ZW` with the config the other
 /// scripts read, and primes WhatsApp's persisted theme before the page boots.
-pub fn bootstrap(wa_theme: &str, auto_lock_minutes: u32, has_password: bool) -> String {
+pub fn bootstrap(
+    wa_theme: &str,
+    auto_lock_minutes: u32,
+    has_password: bool,
+    spellcheck: bool,
+) -> String {
     include_str!("web/bootstrap.js")
         .replace("\"__ZW_THEME__\"", &format!("{wa_theme:?}"))
         .replace(
@@ -56,4 +67,8 @@ pub fn bootstrap(wa_theme: &str, auto_lock_minutes: u32, has_password: bool) -> 
             &auto_lock_minutes.to_string(),
         )
         .replace("\"__ZW_HAS_PASSWORD__\"", &has_password.to_string())
+        .replace("\"__ZW_SPELLCHECK__\"", &spellcheck.to_string())
 }
+
+/// Forces `spellcheck=true` on WhatsApp's composer when enabled.
+pub const SPELLCHECK: &str = include_str!("web/spellcheck.js");

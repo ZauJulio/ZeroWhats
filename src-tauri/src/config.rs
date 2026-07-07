@@ -105,6 +105,11 @@ pub struct Config {
     /// window* (cross-platform, no system idle API). `None`/0 disables it; only
     /// effective when a password is set.
     pub auto_lock_minutes: Option<u32>,
+    /// Spell-check the message composer (WebKitGTK/enchant on Linux). When on
+    /// with no languages listed, WebKit auto-detects from the system locale.
+    pub spellcheck_enabled: bool,
+    /// enchant dictionary codes to spell-check against, e.g. ["en_US","pt_BR"].
+    pub spellcheck_languages: Vec<String>,
 }
 
 impl Default for Config {
@@ -125,6 +130,8 @@ impl Default for Config {
             hardware_acceleration: true,
             lock_on_close: false,
             auto_lock_minutes: None,
+            spellcheck_enabled: true,
+            spellcheck_languages: Vec::new(),
         }
     }
 }
@@ -172,6 +179,8 @@ pub struct ConfigView {
     pub hardware_acceleration: bool,
     pub lock_on_close: bool,
     pub auto_lock_minutes: Option<u32>,
+    pub spellcheck_enabled: bool,
+    pub spellcheck_languages: Vec<String>,
     pub has_password: bool,
 }
 
@@ -191,6 +200,8 @@ impl From<Config> for ConfigView {
             hardware_acceleration: c.hardware_acceleration,
             lock_on_close: c.lock_on_close,
             auto_lock_minutes: c.auto_lock_minutes,
+            spellcheck_enabled: c.spellcheck_enabled,
+            spellcheck_languages: c.spellcheck_languages,
             has_password: c.password_hash.is_some(),
         }
     }
@@ -213,6 +224,8 @@ pub struct ConfigPatch {
     pub hardware_acceleration: bool,
     pub lock_on_close: bool,
     pub auto_lock_minutes: Option<u32>,
+    pub spellcheck_enabled: bool,
+    pub spellcheck_languages: Vec<String>,
 }
 
 impl ConfigPatch {
@@ -232,6 +245,8 @@ impl ConfigPatch {
         cfg.hardware_acceleration = self.hardware_acceleration;
         cfg.lock_on_close = self.lock_on_close;
         cfg.auto_lock_minutes = self.auto_lock_minutes;
+        cfg.spellcheck_enabled = self.spellcheck_enabled;
+        cfg.spellcheck_languages = self.spellcheck_languages;
     }
 }
 
