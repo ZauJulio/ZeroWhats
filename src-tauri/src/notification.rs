@@ -58,14 +58,10 @@ pub fn notify(
 /// Decodes a `data:image/...;base64,...` avatar URL into a file and returns its
 /// path — notification daemons take an icon by path/name, not by a data URL.
 ///
-/// The file must live somewhere the *host's* notification daemon can read. Under
-/// Flatpak that rules out both the sandbox-private temp dir and a plain
-/// `$XDG_RUNTIME_DIR` write: the path advertised inside the sandbox doesn't
-/// resolve on the host (the same trap the tray icon hit). We therefore write into
-/// a subdir the manifest bind-mounts through at an *identical* host path via
-/// `--filesystem=xdg-run/zerowhats:create` — [`avatar_dir`] resolves it. A fixed
-/// name means each notification overwrites the previous file instead of
-/// accumulating. Returns `None` for anything that isn't a base64 data URL.
+/// The file must live somewhere the notification daemon can read — we write it
+/// into `$XDG_RUNTIME_DIR/zerowhats` ([`avatar_dir`] resolves it). A fixed name
+/// means each notification overwrites the previous file instead of accumulating.
+/// Returns `None` for anything that isn't a base64 data URL.
 fn save_avatar(data_url: &str) -> Option<String> {
     use base64::Engine;
     use std::io::Write;
@@ -90,10 +86,8 @@ fn save_avatar(data_url: &str) -> Option<String> {
     path.to_str().map(str::to_string)
 }
 
-/// Directory for the notification avatar file. Prefers `$XDG_RUNTIME_DIR/zerowhats`,
-/// which the Flatpak manifest shares with the host at the same absolute path
-/// (`--filesystem=xdg-run/zerowhats:create`); falls back to the temp dir off
-/// Flatpak, where the daemon runs unsandboxed and can read it directly.
+/// Directory for the notification avatar file. Prefers `$XDG_RUNTIME_DIR/zerowhats`;
+/// falls back to the temp dir when `$XDG_RUNTIME_DIR` is unset.
 fn avatar_dir() -> Option<std::path::PathBuf> {
     std::env::var_os("XDG_RUNTIME_DIR")
         .map(|r| std::path::PathBuf::from(r).join("zerowhats"))
@@ -118,9 +112,9 @@ fn show_clickable_linux(app: &AppHandle, title: String, body: String, avatar: Op
         notification
             .summary(&title)
             .body(&body)
-            // The app icon (resolved by name against the XDG icon theme, which
-            // works under Flatpak). Stays as the notification's app icon; the
-            // sender avatar is layered on top via `image-data` below.
+            // The app icon (resolved by name against the XDG icon theme). Stays
+            // as the notification's app icon; the sender avatar is layered on
+            // top via `image-data` below.
             .icon("com.zaujulio.zerowhats")
             // GNOME Shell only routes a notification's `default` click back to
             // the app when it can tie the notification to a desktop entry; the
@@ -163,11 +157,10 @@ fn show_clickable_linux(app: &AppHandle, title: String, body: String, avatar: Op
 /// The icon to attach to a notification.
 ///
 /// On Linux the notification daemon resolves an icon by *name* against the XDG
-/// icon theme, so we pass the app-id (`com.zaujulio.zerowhats`) — this works
-/// under Flatpak, where the themed icon is installed at
-/// `/app/share/icons/hicolor/*/apps/` but the binary has no `resource_dir()`
-/// copy of the PNG. On other platforms we fall back to the bundled resource
-/// path (`bundle.resources` in tauri.conf.json), which those packagers ship.
+/// icon theme, so we pass the app-id (`com.zaujulio.zerowhats`) — the themed
+/// icon is installed under `share/icons/hicolor/*/apps/` by the Linux packagers.
+/// On other platforms we fall back to the bundled resource path
+/// (`bundle.resources` in tauri.conf.json), which those packagers ship.
 /// Linux drives notifications through `notify-rust` directly (see
 /// [`show_clickable_linux`]) and sets the app-id icon there, so this is only
 /// used on the plugin path.

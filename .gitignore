@@ -11,9 +11,6 @@ src-tauri/binaries/
 src-tauri/gen/
 
 # ---- Release artifacts (built locally or in CI; never committed) ----
-.flatpak-repo/
-.flatpak-build/
-.flatpak-builder/
 release/**/*.AppImage
 release/**/*.deb
 release/**/*.rpm
@@ -22,7 +19,6 @@ release/**/*.msi
 release/**/*.dmg
 release/**/*.app
 release/**/*.snap
-release/**/*.flatpak
 release/**/*.tar.gz
 release/**/*.sig
 release/_artifacts/
