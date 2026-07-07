@@ -7,6 +7,7 @@ window.__ZW = Object.assign(window.__ZW || {}, {
   theme: "__ZW_THEME__",
   autoLockMinutes: "__ZW_AUTO_LOCK_MINUTES__",
   hasPassword: "__ZW_HAS_PASSWORD__",
+  spellcheck: "__ZW_SPELLCHECK__",
 });
 
 try {

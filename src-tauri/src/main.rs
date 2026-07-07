@@ -1,6 +1,7 @@
 // Prevents an extra console window on Windows in release.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod clipboard;
 mod commands;
 mod config;
 mod lock;
@@ -11,7 +12,7 @@ mod tray;
 mod window;
 
 use config::{config_path, Config};
-use tauri::{Listener, Manager, WindowEvent};
+use tauri::{Emitter, Listener, Manager, WindowEvent};
 
 fn main() {
     let mut builder = tauri::Builder::default();
@@ -74,6 +75,11 @@ fn main() {
             commands::apply_autostart(&handle, cfg.auto_start);
 
             window::build_main(&handle, &cfg)?;
+            window::apply_spellcheck(
+                &handle,
+                cfg.spellcheck_enabled,
+                cfg.spellcheck_languages.clone(),
+            );
             register_web_events(&handle);
 
             if cfg.password_hash.is_some() {
@@ -188,9 +194,44 @@ fn apply_linux_rendering() {
         std::env::remove_var("GBM_BACKEND");
         std::env::remove_var("__NV_PRIME_RENDER_OFFLOAD");
         std::env::remove_var("WEBKIT_DISABLE_DMABUF_RENDERER");
+
+        // Point VA-API's device at the integrated GPU's render node. Otherwise
+        // GStreamer probes the NVIDIA node first and logs a harmless-but-noisy
+        // "DRM_IOCTL_VERSION, unsupported drm device by media driver: nvid"
+        // before falling back. Detect the Intel node by PCI vendor id (0x8086)
+        // rather than hard-coding renderD12x, which differs per machine.
+        if let Some(node) = intel_render_node() {
+            std::env::set_var("LIBVA_DRI3_DEVICE", &node);
+            std::env::set_var("VAAPI_DEVICE", &node);
+        }
     } else if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
         std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
     }
+}
+
+/// Finds the integrated-Intel DRM render node (`/dev/dri/renderD*` whose PCI
+/// vendor is 0x8086). Returns `None` on non-Intel or single-GPU machines, where
+/// the default VA-API probing is already correct.
+#[cfg(target_os = "linux")]
+fn intel_render_node() -> Option<String> {
+    let mut nodes: Vec<_> = std::fs::read_dir("/dev/dri")
+        .ok()?
+        .filter_map(|e| e.ok())
+        .filter_map(|e| e.file_name().into_string().ok())
+        .filter(|n| n.starts_with("renderD"))
+        .collect();
+    nodes.sort();
+
+    for name in nodes {
+        let vendor = std::fs::read_to_string(format!("/sys/class/drm/{name}/device/vendor"))
+            .ok()?
+            .trim()
+            .to_string();
+        if vendor == "0x8086" {
+            return Some(format!("/dev/dri/{name}"));
+        }
+    }
+    None
 }
 
 #[derive(serde::Deserialize)]
@@ -257,6 +298,19 @@ fn register_web_events(app: &tauri::AppHandle) {
     app.listen("zw://open-external", move |event| {
         if let Ok(payload) = serde_json::from_str::<UrlPayload>(event.payload()) {
             commands::open_external(&handle, &payload.url);
+        }
+    });
+
+    // Image paste bridge: the page asks for the clipboard image (WebKitGTK can't
+    // give it one itself), we read it and emit it back as a PNG data URL. A
+    // `None` result means there was no image — the page then falls back to the
+    // normal paste. Emitted only to the main window so other windows don't see
+    // it.
+    let handle = app.clone();
+    app.listen("zw://paste-image-request", move |_event| {
+        let files = clipboard::read_clipboard_files();
+        if let Some(main) = handle.get_webview_window(window::MAIN_LABEL) {
+            let _ = main.emit_to(window::MAIN_LABEL, "zw://paste-image-data", files);
         }
     });
 }

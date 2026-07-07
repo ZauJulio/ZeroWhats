@@ -89,8 +89,18 @@ fn chosen_user_agent() -> &'static str {
     if std::env::var("ZW_LIGHT_UA").is_ok() {
         // Mobile UA (smaller surface area in many web apps).
         "Mozilla/5.0 (Linux; Android 12; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36"
-    } else {
+    } else if std::env::var("ZW_CHROME_UA").is_ok() {
+        // The old spoof: Chrome-on-Windows. WhatsApp Web then serves its Blink
+        // code path, which WebKitGTK renders imperfectly — notably stickers and
+        // some emoji fail. Kept behind an env var for A/B testing only.
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+    } else {
+        // Safari on macOS. Since the runtime engine *is* WebKit, advertising a
+        // real WebKit browser makes WhatsApp Web serve the Safari/WebKit code
+        // path — the one it actually tests against for WebKit — which fixes
+        // sticker (animated WebP) and emoji rendering that broke under the
+        // Chrome spoof above.
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15"
     }
 }
 
@@ -145,6 +155,7 @@ pub fn build_main(app: &AppHandle, cfg: &Config) -> tauri::Result<()> {
         cfg.theme.wa_value(),
         auto_lock_minutes,
         start_locked,
+        cfg.spellcheck_enabled,
     ));
 
     builder = builder.initialization_script(scripts::ROUNDED_CORNERS);
@@ -169,7 +180,10 @@ pub fn build_main(app: &AppHandle, cfg: &Config) -> tauri::Result<()> {
         .initialization_script(scripts::LINKS)
         .initialization_script(scripts::FIND)
         .initialization_script(scripts::FULLSCREEN)
-        .initialization_script(scripts::TITLEBAR);
+        .initialization_script(scripts::TITLEBAR)
+        .initialization_script(scripts::RESIZE_HANDLES)
+        .initialization_script(scripts::CLIPBOARD_IMAGE)
+        .initialization_script(scripts::SPELLCHECK);
 
     // Finish building the window; `.build()` returns the created WebviewWindow.
     let _ = builder.build()?;
@@ -240,6 +254,40 @@ pub fn apply_theme(app: &AppHandle, theme: Theme) {
         let _ = main.eval(format!(
             "(function(){{ try {{ localStorage.setItem('theme', '\"{wa}\"'); location.reload(); }} catch (e) {{}} }})();"
         ));
+    }
+}
+
+/// Applies the spell-check settings to the main WhatsApp webview. On Linux we
+/// reach the underlying `WebKitWebView`'s context and toggle enchant spell
+/// checking (with the chosen dictionaries, or auto-detected when the list is
+/// empty). No-op on other platforms for now — WebView2/WKWebView spell check
+/// their editable fields by default.
+pub fn apply_spellcheck(app: &AppHandle, enabled: bool, languages: Vec<String>) {
+    let Some(main) = app.get_webview_window(MAIN_LABEL) else {
+        return;
+    };
+
+    #[cfg(target_os = "linux")]
+    {
+        use webkit2gtk::{WebContextExt, WebViewExt};
+
+        let _ = main.with_webview(move |webview| {
+            let wv = webview.inner();
+
+            // enchant spell checking lives on the shared WebContext.
+            if let Some(ctx) = wv.context() {
+                ctx.set_spell_checking_enabled(enabled);
+                if enabled && !languages.is_empty() {
+                    let langs: Vec<&str> = languages.iter().map(String::as_str).collect();
+                    ctx.set_spell_checking_languages(&langs);
+                }
+            }
+        });
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = (enabled, languages);
     }
 }
 

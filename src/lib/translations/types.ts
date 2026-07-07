@@ -33,6 +33,9 @@ export interface Strings {
   autoDownloadDesc: string;
   downloadFolder: string;
   choose: string;
+  spellcheck: string;
+  spellcheckEnable: string;
+  spellcheckEnableDesc: string;
   notifications: string;
   notifPrivacy: string;
   notifPrivacyDesc: string;

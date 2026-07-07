@@ -16,9 +16,26 @@ import { useReveal } from "../../lib/window";
 import { t } from "../../lib/translations";
 import styles from "./Settings.module.css";
 
+// Common enchant dictionary codes offered as spell-check toggles. Which ones
+// actually work depends on the hunspell/enchant dictionaries installed on the
+// system; missing ones are simply ignored by WebKit.
+const SPELLCHECK_DICTS: { code: string; label: string }[] = [
+  { code: "en_US", label: "English (US)" },
+  { code: "en_GB", label: "English (UK)" },
+  { code: "pt_BR", label: "Português (Brasil)" },
+  { code: "pt_PT", label: "Português (Portugal)" },
+  { code: "es_ES", label: "Español" },
+  { code: "fr_FR", label: "Français" },
+  { code: "de_DE", label: "Deutsch" },
+  { code: "it_IT", label: "Italiano" },
+];
+
+type Tab = "general" | "security" | "notifications" | "advanced";
+
 export default function Settings() {
   const [cfg, setCfg] = useState<ConfigView | null>(null);
   const [newPassword, setNewPassword] = useState("");
+  const [tab, setTab] = useState<Tab>("general");
 
   useEffect(() => {
     getConfig().then((c) => {
@@ -66,148 +83,206 @@ export default function Settings() {
     setTheme(theme);
   };
 
+  const TABS: { id: Tab; label: string }[] = [
+    { id: "general", label: t.general },
+    { id: "security", label: t.security },
+    { id: "notifications", label: t.notifications },
+    { id: "advanced", label: t.advanced },
+  ];
+
   return (
     <AppWindow title={t.settingsTitle}>
-      <Group title={t.general}>
-        <Row title={t.theme} subtitle={t.themeDesc}>
-          <Select<Theme>
-            value={cfg.theme}
-            onChange={changeTheme}
-            options={[
-              { value: "system", label: t.themeSystem },
-              { value: "light", label: t.themeLight },
-              { value: "dark", label: t.themeDark },
-            ]}
-          />
-        </Row>
+      <nav className={styles.tabs} role="tablist">
+        {TABS.map((tb) => (
+          <button
+            key={tb.id}
+            role="tab"
+            aria-selected={tab === tb.id}
+            className={cx(styles.tab, tab === tb.id && styles.tabActive)}
+            onClick={() => setTab(tb.id)}
+          >
+            {tb.label}
+          </button>
+        ))}
+      </nav>
 
-        <Row title={t.language} subtitle={t.languageDesc}>
-          <Select<string>
-            value={cfg.locale ?? "system"}
-            onChange={(v) => update({ locale: v === "system" ? null : v })}
-            options={[
-              { value: "system", label: t.languageSystem },
-              { value: "en", label: "English" },
-              { value: "pt-br", label: "Português (Brasil)" },
-            ]}
-          />
-        </Row>
-      </Group>
-
-      <Group title={t.security}>
-        <Row title={t.appLock} subtitle={t.appLockDesc}>
-          {cfg.has_password ? (
-            <button className={cx(ui.btn, ui.danger)} onClick={removePassword}>
-              {t.removePassword}
-            </button>
-          ) : (
-            <div className={styles.passwordRow}>
-              <input
-                className={ui.input}
-                type="password"
-                placeholder={t.newPassword}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+      {tab === "general" && (
+        <>
+          <Group title={t.general}>
+            <Row title={t.theme} subtitle={t.themeDesc}>
+              <Select<Theme>
+                value={cfg.theme}
+                onChange={changeTheme}
+                options={[
+                  { value: "system", label: t.themeSystem },
+                  { value: "light", label: t.themeLight },
+                  { value: "dark", label: t.themeDark },
+                ]}
               />
-              
-              {newPassword && (
-                <button className={cx(ui.btn, ui.accent)} onClick={savePassword}>
-                  {t.savePassword}
-                </button>
-              )}
-            </div>
-          )}
-        </Row>
+            </Row>
 
-        <Row title={t.lockOnClose} subtitle={t.lockOnCloseDesc}>
-          <Toggle checked={cfg.lock_on_close} onChange={(v) => update({ lock_on_close: v })} />
-        </Row>
+            <Row title={t.language} subtitle={t.languageDesc}>
+              <Select<string>
+                value={cfg.locale ?? "system"}
+                onChange={(v) => update({ locale: v === "system" ? null : v })}
+                options={[
+                  { value: "system", label: t.languageSystem },
+                  { value: "en", label: "English" },
+                  { value: "pt-br", label: "Português (Brasil)" },
+                ]}
+              />
+            </Row>
+          </Group>
 
-        <Row
-          title={t.autoLock}
-          subtitle={cfg.has_password ? t.autoLockDesc : t.autoLockNeedsPassword}
-        >
-          <Select<string>
-            value={String(cfg.auto_lock_minutes ?? 0)}
-            disabled={!cfg.has_password}
-            onChange={(v) => update({ auto_lock_minutes: Number(v) === 0 ? null : Number(v) })}
-            options={[
-              { value: "0", label: t.autoLockOff },
-              { value: "1", label: t.autoLock1 },
-              { value: "5", label: t.autoLock5 },
-              { value: "15", label: t.autoLock15 },
-              { value: "30", label: t.autoLock30 },
-            ]}
-          />
-        </Row>
+          <Group title={t.downloads}>
+            <Row title={t.autoDownload} subtitle={t.autoDownloadDesc}>
+              <Toggle checked={cfg.auto_download} onChange={(v) => update({ auto_download: v })} />
+            </Row>
 
-        <Row title={t.proxy} subtitle={t.proxyDesc}>
-          <Toggle checked={cfg.proxy_enabled} onChange={(v) => update({ proxy_enabled: v })} />
-        </Row>
+            <Row title={t.downloadFolder}>
+              <button className={ui.btn} onClick={chooseFolder}>
+                {cfg.download_path ?? t.choose}
+              </button>
+            </Row>
+          </Group>
+        </>
+      )}
 
-        {cfg.proxy_enabled && (
-          <Row title={t.proxyUrl}>
-            <input
-              className={ui.input}
-              type="text"
-              placeholder="http://127.0.0.1:8080"
-              value={cfg.proxy_url}
-              onChange={(e) => setCfg({ ...cfg, proxy_url: e.target.value })}
-              onBlur={() => update({ proxy_url: cfg.proxy_url })}
+      {tab === "security" && (
+        <Group title={t.security}>
+          <Row title={t.appLock} subtitle={t.appLockDesc}>
+            {cfg.has_password ? (
+              <button className={cx(ui.btn, ui.danger)} onClick={removePassword}>
+                {t.removePassword}
+              </button>
+            ) : (
+              <div className={styles.passwordRow}>
+                <input
+                  className={ui.input}
+                  type="password"
+                  placeholder={t.newPassword}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+
+                {newPassword && (
+                  <button className={cx(ui.btn, ui.accent)} onClick={savePassword}>
+                    {t.savePassword}
+                  </button>
+                )}
+              </div>
+            )}
+          </Row>
+
+          <Row title={t.lockOnClose} subtitle={t.lockOnCloseDesc}>
+            <Toggle checked={cfg.lock_on_close} onChange={(v) => update({ lock_on_close: v })} />
+          </Row>
+
+          <Row
+            title={t.autoLock}
+            subtitle={cfg.has_password ? t.autoLockDesc : t.autoLockNeedsPassword}
+          >
+            <Select<string>
+              value={String(cfg.auto_lock_minutes ?? 0)}
+              disabled={!cfg.has_password}
+              onChange={(v) => update({ auto_lock_minutes: Number(v) === 0 ? null : Number(v) })}
+              options={[
+                { value: "0", label: t.autoLockOff },
+                { value: "1", label: t.autoLock1 },
+                { value: "5", label: t.autoLock5 },
+                { value: "15", label: t.autoLock15 },
+                { value: "30", label: t.autoLock30 },
+              ]}
             />
           </Row>
-        )}
-      </Group>
 
-      <Group title={t.downloads}>
-        <Row title={t.autoDownload} subtitle={t.autoDownloadDesc}>
-          <Toggle checked={cfg.auto_download} onChange={(v) => update({ auto_download: v })} />
-        </Row>
+          <Row title={t.proxy} subtitle={t.proxyDesc}>
+            <Toggle checked={cfg.proxy_enabled} onChange={(v) => update({ proxy_enabled: v })} />
+          </Row>
 
-        <Row title={t.downloadFolder}>
-          <button className={ui.btn} onClick={chooseFolder}>
-            {cfg.download_path ?? t.choose}
-          </button>
-        </Row>
-      </Group>
+          {cfg.proxy_enabled && (
+            <Row title={t.proxyUrl}>
+              <input
+                className={ui.input}
+                type="text"
+                placeholder="http://127.0.0.1:8080"
+                value={cfg.proxy_url}
+                onChange={(e) => setCfg({ ...cfg, proxy_url: e.target.value })}
+                onBlur={() => update({ proxy_url: cfg.proxy_url })}
+              />
+            </Row>
+          )}
+        </Group>
+      )}
 
-      <Group title={t.notifications}>
-        <Row title={t.notifPrivacy} subtitle={t.notifPrivacyDesc}>
-          <Select<NotificationPrivacy>
-            value={cfg.notification_privacy}
-            onChange={(v) => update({ notification_privacy: v })}
-            options={[
-              { value: "full", label: t.notifPrivacyFull },
-              { value: "generic", label: t.notifPrivacyGeneric },
-              { value: "hidden", label: t.notifPrivacyHidden },
-            ]}
-          />
-        </Row>
+      {tab === "notifications" && (
+        <Group title={t.notifications}>
+          <Row title={t.notifPrivacy} subtitle={t.notifPrivacyDesc}>
+            <Select<NotificationPrivacy>
+              value={cfg.notification_privacy}
+              onChange={(v) => update({ notification_privacy: v })}
+              options={[
+                { value: "full", label: t.notifPrivacyFull },
+                { value: "generic", label: t.notifPrivacyGeneric },
+                { value: "hidden", label: t.notifPrivacyHidden },
+              ]}
+            />
+          </Row>
 
-        <Row title={t.hideOnUnfocus} subtitle={t.hideOnUnfocusDesc}>
-          <Toggle
-            checked={cfg.hide_content_on_unfocus}
-            onChange={(v) => update({ hide_content_on_unfocus: v })}
-          />
-        </Row>
-      </Group>
+          <Row title={t.hideOnUnfocus} subtitle={t.hideOnUnfocusDesc}>
+            <Toggle
+              checked={cfg.hide_content_on_unfocus}
+              onChange={(v) => update({ hide_content_on_unfocus: v })}
+            />
+          </Row>
+        </Group>
+      )}
 
-      <Group title={t.advanced}>
-        <Row title={t.hwAccel} subtitle={t.hwAccelDesc}>
-          <Toggle
-            checked={cfg.hardware_acceleration}
-            onChange={(v) => update({ hardware_acceleration: v })}
-          />
-        </Row>
+      {tab === "advanced" && (
+        <>
+          <Group title={t.advanced}>
+            <Row title={t.hwAccel} subtitle={t.hwAccelDesc}>
+              <Toggle
+                checked={cfg.hardware_acceleration}
+                onChange={(v) => update({ hardware_acceleration: v })}
+              />
+            </Row>
 
-        <Row title={t.launchAtLogin} subtitle={t.launchAtLoginDesc}>
-          <Toggle checked={cfg.auto_start} onChange={(v) => update({ auto_start: v })} />
-        </Row>
+            <Row title={t.launchAtLogin} subtitle={t.launchAtLoginDesc}>
+              <Toggle checked={cfg.auto_start} onChange={(v) => update({ auto_start: v })} />
+            </Row>
 
-        <Row title={t.cache} subtitle={t.cacheDesc}>
-          <Toggle checked={cfg.cache_enabled} onChange={(v) => update({ cache_enabled: v })} />
-        </Row>
-      </Group>
+            <Row title={t.cache} subtitle={t.cacheDesc}>
+              <Toggle checked={cfg.cache_enabled} onChange={(v) => update({ cache_enabled: v })} />
+            </Row>
+          </Group>
+
+          <Group title={t.spellcheck}>
+            <Row title={t.spellcheckEnable} subtitle={t.spellcheckEnableDesc}>
+              <Toggle
+                checked={cfg.spellcheck_enabled}
+                onChange={(v) => update({ spellcheck_enabled: v })}
+              />
+            </Row>
+
+            {cfg.spellcheck_enabled &&
+              SPELLCHECK_DICTS.map((d) => (
+                <Row key={d.code} title={d.label} subtitle={d.code}>
+                  <Toggle
+                    checked={cfg.spellcheck_languages.includes(d.code)}
+                    onChange={(on) =>
+                      update({
+                        spellcheck_languages: on
+                          ? [...cfg.spellcheck_languages, d.code]
+                          : cfg.spellcheck_languages.filter((c) => c !== d.code),
+                      })
+                    }
+                  />
+                </Row>
+              ))}
+          </Group>
+        </>
+      )}
     </AppWindow>
   );
 }
