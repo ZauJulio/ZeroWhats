@@ -131,13 +131,25 @@ fn show_clickable_linux(app: &AppHandle, title: String, body: String, avatar: Op
         // we decode the avatar file and attach it as inline `image-data`, which
         // it honours — this is what makes the photo actually show. Best-effort:
         // if decoding fails the notification still goes out without a photo.
-        if let Some(path) = avatar.as_deref() {
-            match notify_rust::Image::open(path) {
-                Ok(image) => {
-                    notification.hint(notify_rust::Hint::ImageData(image));
+        //
+        // With no avatar we attach the *app* icon as image-data. The named
+        // `.icon(...)`/`desktop-entry` route only renders once a packaged build
+        // has installed the themed icon file, so on dev / unpackaged runs the
+        // notification would otherwise show no icon at all. The icon is embedded
+        // in the binary (see `app_icon_image`), so a valid image is always
+        // available regardless of install layout.
+        let icon_image = match avatar.as_deref() {
+            Some(path) => match notify_rust::Image::open(path) {
+                Ok(image) => Some(image),
+                Err(e) => {
+                    log::warn!("failed to load notification avatar '{path}': {e}");
+                    app_icon_image()
                 }
-                Err(e) => log::warn!("failed to load notification avatar: {e}"),
-            }
+            },
+            None => app_icon_image(),
+        };
+        if let Some(image) = icon_image {
+            notification.hint(notify_rust::Hint::ImageData(image));
         }
 
         match notification.show() {
@@ -152,6 +164,27 @@ fn show_clickable_linux(app: &AppHandle, title: String, body: String, avatar: Op
             Err(e) => log::warn!("failed to show notification: {e}"),
         }
     });
+}
+
+/// The app icon as a `notify_rust::Image`, attached to notifications that have
+/// no sender avatar. Built from the icon PNG embedded in the binary so it works
+/// regardless of install layout (dev, AppImage, or packaged) — unlike named-icon
+/// resolution, which needs the themed icon file installed on disk.
+///
+/// We decode the PNG via Tauri's image loader (already a dependency) to raw RGBA,
+/// then hand that to `notify_rust::Image::from_rgba`, which the notification
+/// daemon renders as inline `image-data`.
+#[cfg(target_os = "linux")]
+fn app_icon_image() -> Option<notify_rust::Image> {
+    const ICON_PNG: &[u8] = include_bytes!("../icons/128x128.png");
+
+    let img = tauri::image::Image::from_bytes(ICON_PNG).ok()?;
+    notify_rust::Image::from_rgba(
+        img.width() as i32,
+        img.height() as i32,
+        img.rgba().to_vec(),
+    )
+    .ok()
 }
 
 /// The icon to attach to a notification.

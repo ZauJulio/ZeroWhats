@@ -30,7 +30,20 @@ export type ConfigPatch = Omit<ConfigView, "has_password">;
 
 export const getConfig = () => invoke<ConfigView>("get_config");
 export const saveConfig = (patch: ConfigPatch) => invoke("save_config", { patch });
-export const setPassword = (plain: string | null) => invoke("set_password", { plain });
+/**
+ * Sets or replaces the app-lock password. Replacing an existing one requires
+ * `current` (the current password) to verify; first-time set needs no `current`.
+ * Returns whether it was changed.
+ */
+export const setPassword = (plain: string, current?: string) =>
+  invoke<boolean>("set_password", { plain, current: current ?? null });
+/**
+ * Removes the app-lock password. Requires either `current` (the current
+ * password) or, when omitted/wrong, a successful system-admin authentication
+ * (polkit / UAC / macOS admin dialog). Returns whether it was removed.
+ */
+export const removePassword = (current?: string) =>
+  invoke<boolean>("remove_password", { current: current ?? null });
 export const resetPassword = () => invoke<boolean>("reset_password");
 /** Non-Linux recovery: log WhatsApp out and erase all local data + password. */
 export const forgetPasswordWipe = () => invoke("forget_password_wipe");

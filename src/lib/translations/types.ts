@@ -15,6 +15,9 @@ export interface Strings {
   newPassword: string;
   savePassword: string;
   removePassword: string;
+  currentPassword: string;
+  confirmRemove: string;
+  cancel: string;
   lockOnClose: string;
   lockOnCloseDesc: string;
   autoLock: string;

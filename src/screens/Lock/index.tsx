@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Lock as LockIcon } from "lucide-react";
 import { ask } from "@tauri-apps/plugin-dialog";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   getConfig,
   unlockApp,
@@ -28,6 +29,21 @@ export default function Lock() {
   }, []);
 
   useReveal();
+
+  // Ctrl+W dismisses the lock window to the tray (the app stays locked — we
+  // never close/destroy it, which would leave no way back except the tray, and
+  // we never unlock). Mirrors the main window's close-to-tray behaviour; the
+  // AppWindow chrome that handles Ctrl+W elsewhere isn't used on this screen.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === "w") {
+        e.preventDefault();
+        void getCurrentWindow().hide();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   // Tick down the post-failure cooldown (one decrement per second).
   useEffect(() => {

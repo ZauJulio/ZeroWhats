@@ -312,6 +312,14 @@ pub fn show_main(app: &AppHandle) {
 /// Opens (or focuses) a frameless React window that renders the screen matching
 /// its label.
 fn open_react_window(app: &AppHandle, label: &str, title: &str, size: (f64, f64), resizable: bool) {
+    // While locked, the auxiliary windows (settings/about/shortcuts) must stay
+    // shut — they expose config and the password controls. Redirect to the lock
+    // screen instead so the tray/menu entries can't bypass the lock.
+    if lock::is_locked() {
+        lock::show_lock_window(app);
+        return;
+    }
+
     if let Some(win) = app.get_webview_window(label) {
         let _ = win.show();
         let _ = win.set_focus();
