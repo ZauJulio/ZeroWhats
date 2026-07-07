@@ -33,7 +33,17 @@
 
 .passwordRow {
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.removeHint {
+  color: var(--danger);
+  font-size: 0.8rem;
+  width: 100%;
+  text-align: right;
 }
 
 /* Settings tab bar. */
@@ -71,4 +81,21 @@
   background: var(--bg);
   opacity: 1;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+/* Spell-check dictionary list: a subtly tinted panel so the language toggles
+   read as a grouped sub-list distinct from the top-level settings rows. */
+.dictList {
+  border-radius: 0.6rem;
+  padding: 0 0.75rem;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.dictList > * {
+  border-bottom: 1px solid var(--border);
+}
+
+.dictList > *:last-child {
+  border-bottom: none;
 }

@@ -282,6 +282,25 @@ jobs:
             # above, which works unattended.
             Write-Host "Package not yet in winget-pkgs — generating manifests for a manual first submission."
             .\wingetcreate.exe new $msi $exe --out manifests --token $env:WINGET_TOKEN
+
+            # wingetcreate can emit a different `ManifestVersion:` in each of the
+            # three multi-file manifests, which fails validation with
+            # `InconsistentMultiFileManifestFieldValue (ManifestVersion)`. Force
+            # them all to match the version manifest (the `.yaml` without an
+            # `.installer`/`.locale` infix).
+            $yamls = Get-ChildItem manifests -Recurse -Filter *.yaml
+            $verManifest = $yamls | Where-Object {
+              $_.Name -notmatch '\.installer\.yaml$' -and $_.Name -notmatch '\.locale\.'
+            } | Select-Object -First 1
+            if ($verManifest) {
+              $mv = (Select-String -Path $verManifest.FullName -Pattern '^ManifestVersion:\s*(.+)$').Matches[0].Groups[1].Value.Trim()
+              Write-Host "Normalizing ManifestVersion to '$mv' across manifests."
+              foreach ($f in $yamls) {
+                (Get-Content $f.FullName) `
+                  -replace '^ManifestVersion:\s*.+$', "ManifestVersion: $mv" `
+                  | Set-Content $f.FullName
+              }
+            }
             Write-Host "::notice::winget: first-time package — submit ./manifests manually (see job artifact)."
           }
 

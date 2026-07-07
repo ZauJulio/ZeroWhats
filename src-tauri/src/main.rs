@@ -60,6 +60,7 @@ fn main() {
             commands::get_config,
             commands::save_config,
             commands::set_password,
+            commands::remove_password,
             commands::reset_password,
             commands::forget_password_wipe,
             commands::get_platform,
