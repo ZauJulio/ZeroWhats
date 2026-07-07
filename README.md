@@ -4,6 +4,8 @@
 
 # ZeroWhats
 
+**Read this in other languages:** [Português (Brasil)](README.pt-BR.md)
+
 **A privacy-first WhatsApp Web desktop client for Linux, macOS & Windows.**
 
 Small, fast, native — built with [Tauri](https://tauri.app) + [Preact](https://preactjs.com). No Electron,
