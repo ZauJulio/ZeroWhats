@@ -13,10 +13,10 @@ const TRAY_ID: &str = "tray";
 
 /// The tray icon, embedded at 128×128. `default_window_icon()` resolves to the
 /// bundle's *first* icon (32×32), which is too small/low-res for the
-/// StatusNotifierItem pixmap path: GNOME's AppIndicator (notably under Flatpak)
-/// downgrades an undersized pixmap to a "…" placeholder. Passing an explicit
-/// larger pixmap renders correctly. The same base feeds `render_badge`, so the
-/// unread counter is drawn on the high-res icon too.
+/// StatusNotifierItem pixmap path: GNOME's AppIndicator downgrades an undersized
+/// pixmap to a "…" placeholder. Passing an explicit larger pixmap renders
+/// correctly. The same base feeds `render_badge`, so the unread counter is drawn
+/// on the high-res icon too.
 const TRAY_ICON: &[u8] = include_bytes!("../icons/128x128.png");
 
 fn app_icon(_app: &AppHandle) -> Image<'static> {
