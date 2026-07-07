@@ -19,7 +19,8 @@ pub const NOTIFICATIONS: &str = include_str!("web/notifications.js");
 /// Mirrors WhatsApp's unread count onto the tray (`set_unread`).
 pub const UNREAD_BADGE: &str = include_str!("web/unread-badge.js");
 
-/// App-scoped inactivity auto-lock. Reads `window.__ZW.autoLockMinutes`.
+/// Reports in-page mouse/keyboard activity as `zw://activity`, resetting the
+/// auto-lock idle clock that actually lives in Rust (`lock::spawn_watcher`).
 pub const AUTO_LOCK: &str = include_str!("web/auto-lock.js");
 
 /// Exposes `window.__ZW.setBlur` so Rust can blur the page while the window is
