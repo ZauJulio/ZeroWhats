@@ -273,8 +273,21 @@ jobs:
           $exitCode = $LASTEXITCODE
 
           if ($exitCode -ne 0) {
-            Write-Host "Package not found in winget-pkgs — submitting as new package."
-            .\wingetcreate.exe new $msi $exe `
-              --submit `
-              --token $env:WINGET_TOKEN
+            # First-ever submission of a brand-new package. Automating this
+            # reliably is a known pain: `wingetcreate new --submit` needs to fork
+            # microsoft/winget-pkgs and the first PR is moderator-reviewed. Rather
+            # than fail the whole release on it, generate the manifests locally
+            # and surface them as an artifact so the maintainer can submit the
+            # first version by hand; subsequent releases use the `update` path
+            # above, which works unattended.
+            Write-Host "Package not yet in winget-pkgs — generating manifests for a manual first submission."
+            .\wingetcreate.exe new $msi $exe --out manifests --token $env:WINGET_TOKEN
+            Write-Host "::notice::winget: first-time package — submit ./manifests manually (see job artifact)."
           }
+
+      - name: Upload winget manifests for manual first submission
+        if: env.WINGET_TOKEN != '' && hashFiles('manifests/**') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: winget-manifests
+          path: manifests/
