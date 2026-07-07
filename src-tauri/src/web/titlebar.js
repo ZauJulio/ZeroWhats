@@ -34,6 +34,8 @@
           about: "Sobre o ZeroWhats",
           menu: "Menu",
           minimize: "Minimizar",
+          maximize: "Maximizar",
+          restore: "Restaurar",
           close: "Fechar",
         }
       : {
@@ -43,6 +45,8 @@
           about: "About ZeroWhats",
           menu: "Menu",
           minimize: "Minimize",
+          maximize: "Maximize",
+          restore: "Restore",
           close: "Close",
         };
   })();
@@ -51,6 +55,12 @@
     menu: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>',
     minimize:
       '<svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+    // A single square = maximize; the offset double square = restore. The button
+    // swaps between them as the window's maximized state changes.
+    maximize:
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="1.5"/></svg>',
+    restore:
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="7" y="7" width="12" height="12" rx="1.5"/><path d="M5 15V6a1.5 1.5 0 0 1 1.5-1.5H16"/></svg>',
     close:
       '<svg width="15" height="15" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>',
   };
@@ -253,11 +263,35 @@
       spacer.className = "zw-spacer";
 
       const minimize = this._iconButton(ICONS.minimize, STRINGS.minimize);
+      const maximize = this._iconButton(ICONS.maximize, STRINGS.maximize, "zw-max");
       const close = this._iconButton(ICONS.close, STRINGS.close, "zw-close");
 
+      // Reflect the live maximized state on the button (icon + tooltip) so it
+      // reads "restore" once maximized. Runs on mount and on every resize.
+      // `maxState` mirrors it for the drag handler below (which must not start a
+      // drag while maximized — see there).
+      const win = currentWindow();
+      let maxState = false;
+      const syncMaxIcon = async () => {
+        try {
+          const isMax = await win.isMaximized();
+          maxState = isMax;
+          maximize.innerHTML = isMax ? ICONS.restore : ICONS.maximize;
+          maximize.title = isMax ? STRINGS.restore : STRINGS.maximize;
+        } catch (e) {
+          console.error("[ZeroWhats] isMaximized failed", e);
+        }
+      };
+      syncMaxIcon();
+      try {
+        win.onResized(() => syncMaxIcon());
+      } catch (e) {
+        console.error("[ZeroWhats] onResized listen failed", e);
+      }
+
       const layout = IS_MAC
-        ? [close, minimize, hamburger, title, spacer]
-        : [hamburger, title, spacer, minimize, close];
+        ? [close, minimize, maximize, hamburger, title, spacer]
+        : [hamburger, title, spacer, minimize, maximize, close];
 
       for (const el of layout) bar.appendChild(el);
       (document.body || document.documentElement).appendChild(bar);
@@ -268,27 +302,66 @@
       });
 
       minimize.addEventListener("click", () => currentWindow().minimize());
+      maximize.addEventListener("click", async () => {
+        try {
+          await currentWindow().toggleMaximize();
+          syncMaxIcon();
+        } catch (e) {
+          console.error("[ZeroWhats] toggleMaximize failed", e);
+        }
+      });
       close.addEventListener("click", () => currentWindow().close());
 
       // data-tauri-drag-region isn't reliably honoured inside a remote page, so
       // start the window drag explicitly on a primary press outside the buttons.
+      //
+      // `startDragging()` hands the pointer to the window manager, which swallows
+      // the `dblclick` that would otherwise fire. So we detect the double click
+      // ourselves (second primary press, fast + near the first) and toggle
+      // maximize instead.
+      //
+      // The subtle bug this fixes: on a *maximized* window the WM restores as
+      // soon as a drag starts (its tear-off behaviour). If the first press of a
+      // double had started a drag, that press alone would restore, and the
+      // second would re-maximize — so "restore" looked broken. Fix: never start
+      // a drag while maximized (a maximized window has nowhere to drag to
+      // anyway), so the double click's toggleMaximize is the only thing that
+      // acts, and restore works. `maxState` is kept fresh by `syncMaxIcon`.
+      let lastDown = 0;
+      let lastX = 0;
+      let lastY = 0;
       bar.addEventListener("mousedown", (event) => {
         if (event.button !== 0 || event.target.closest("button")) return;
+
+        const now = Date.now();
+        const isDouble =
+          now - lastDown < 400 &&
+          Math.abs(event.clientX - lastX) < 6 &&
+          Math.abs(event.clientY - lastY) < 6;
+        lastX = event.clientX;
+        lastY = event.clientY;
+        lastDown = isDouble ? 0 : now; // reset so a triple-click isn't two doubles
+
+        if (isDouble) {
+          (async () => {
+            try {
+              await currentWindow().toggleMaximize();
+              syncMaxIcon();
+            } catch (e) {
+              console.error("[ZeroWhats] toggleMaximize failed", e);
+            }
+          })();
+          return;
+        }
+
+        // Don't drag a maximized window — that would trigger the WM's restore
+        // and fight the double-click-to-restore above.
+        if (maxState) return;
 
         try {
           currentWindow().startDragging();
         } catch (e) {
           console.error("[ZeroWhats] startDragging failed", e);
-        }
-      });
-
-      bar.addEventListener("dblclick", (event) => {
-        if (event.target.closest("button")) return;
-
-        try {
-          currentWindow().toggleMaximize();
-        } catch (e) {
-          console.error("[ZeroWhats] toggleMaximize failed", e);
         }
       });
     }

@@ -52,6 +52,14 @@
   -->
 
   <releases>
+    <release version="1.1.0" date="2026-07-07">
+      <description>
+        <p>Spell check with selectable dictionaries, clipboard image/file paste,
+        working stickers and emoji on Linux, a maximize button with
+        double-click-to-maximize, window resize grips, and a tabbed Settings
+        window.</p>
+      </description>
+    </release>
     <release version="1.0.0" date="2026-06-30">
       <description>
         <p>Initial release.</p>

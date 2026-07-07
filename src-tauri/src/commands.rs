@@ -24,6 +24,7 @@ pub fn save_config(app: tauri::AppHandle, patch: ConfigPatch) {
     let _ = cfg.save(&path);
     apply_autostart(&app, cfg.auto_start);
     lock::apply_auto_lock(&app);
+    window::apply_spellcheck(&app, cfg.spellcheck_enabled, cfg.spellcheck_languages.clone());
 }
 
 #[tauri::command]

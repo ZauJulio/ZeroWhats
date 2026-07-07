@@ -21,6 +21,8 @@ export interface ConfigView {
   hardware_acceleration: boolean;
   lock_on_close: boolean;
   auto_lock_minutes: number | null;
+  spellcheck_enabled: boolean;
+  spellcheck_languages: string[];
   has_password: boolean;
 }
 
