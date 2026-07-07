@@ -175,6 +175,7 @@ pub fn build_main(app: &AppHandle, cfg: &Config) -> tauri::Result<()> {
     }
 
     builder = builder
+        .initialization_script(scripts::MPRIS)
         .initialization_script(scripts::AUTO_LOCK)
         .initialization_script(scripts::PRIVACY_BLUR)
         .initialization_script(scripts::LINKS)

@@ -16,6 +16,11 @@ pub const BACKGROUND_SYNC: &str = include_str!("web/background-sync.js");
 /// Redirects web notifications to native OS notifications.
 pub const NOTIFICATIONS: &str = include_str!("web/notifications.js");
 
+/// Stubs `navigator.mediaSession` so WebKitGTK never registers an MPRIS media
+/// player for call/voice-note audio (see the file for why there's no engine
+/// setting to disable this instead).
+pub const MPRIS: &str = include_str!("web/mpris.js");
+
 /// Mirrors WhatsApp's unread count onto the tray (`set_unread`).
 pub const UNREAD_BADGE: &str = include_str!("web/unread-badge.js");
 
