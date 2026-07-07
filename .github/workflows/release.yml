@@ -300,7 +300,14 @@ jobs:
             # first version by hand; subsequent releases use the `update` path
             # above, which works unattended.
             Write-Host "Package not yet in winget-pkgs — generating manifests for a manual first submission."
-            .\wingetcreate.exe new $msi $exe --out manifests --token $env:WINGET_TOKEN
+            # --id avoids the interactive package-identifier prompt (Sharprompt
+            # needs a TTY, which CI doesn't have, and would otherwise crash with
+            # "Sharprompt requires an interactive environment"). Other optional
+            # fields without a default may still prompt; if this ever crashes for
+            # that reason, the fix is to run `wingetcreate new` locally once to
+            # produce a full manifest, then let `update` above take over for
+            # every release after.
+            .\wingetcreate.exe new $msi $exe --id ZauJulio.ZeroWhats --out manifests --token $env:WINGET_TOKEN
 
             # wingetcreate can emit a different `ManifestVersion:` in each of the
             # three multi-file manifests, which fails validation with
