@@ -16,7 +16,9 @@ icon: ../../src-tauri/icons/128x128.png
 apps:
   zerowhats:
     command: usr/bin/zerowhats
-    desktop: usr/share/applications/zerowhats.desktop
+    # The Tauri .deb ships this file CamelCased (ZeroWhats.desktop), so the path
+    # must match exactly or the launcher won't register.
+    desktop: usr/share/applications/ZeroWhats.desktop
     extensions: [gnome]
     plugs:
       - home
@@ -28,26 +30,28 @@ apps:
 
 parts:
   zerowhats:
+    # Don't rebuild the whole app inside the snap sandbox — that recompiled all
+    # of Rust + the frontend (and fetched bun via `curl | bash`) inside a
+    # confined LXD build, which was slow and could hang for 20+ minutes. The
+    # `desktop` CI job already produces the .deb and, because `snap` needs
+    # [version, desktop], it is published to the release before this runs. So we
+    # just download that published .deb and unpack it — the build takes seconds
+    # and can't stall on an in-sandbox toolchain fetch.
+    #
+    # The URL carries the literal version because snapcraft does NOT expand env
+    # vars in scriptlets' network calls reliably across bases; the release
+    # workflow keeps `version:` above and this URL in sync via sed on each tag.
     plugin: nil
-    source: ../..
-    build-snaps:
-      - rustup
+    source: .
     build-packages:
-      - libwebkit2gtk-4.1-dev
-      - libgtk-3-dev
-      - libayatana-appindicator3-dev
-      - librsvg2-dev
-      - patchelf
-      - libssl-dev
+      - dpkg
       - curl
+      - ca-certificates
     stage-packages:
       - libwebkit2gtk-4.1-0
       - libayatana-appindicator3-1
     override-build: |
-      rustup default stable
-      curl -fsSL https://bun.sh/install | bash
-      export PATH="$HOME/.bun/bin:$PATH"
-      bun install --frozen-lockfile
-      bun run tauri build -- --bundles deb
-      # Unpack the freshly built .deb into the snap's install tree.
-      dpkg-deb -x src-tauri/target/release/bundle/deb/*.deb "$CRAFT_PART_INSTALL"
+      VERSION="$(craftctl get version)"
+      URL="https://github.com/ZauJulio/ZeroWhats/releases/download/v${VERSION}/ZeroWhats_${VERSION}_amd64.deb"
+      curl -fSL --retry 5 --retry-delay 5 -o app.deb "$URL"
+      dpkg-deb -x app.deb "$CRAFT_PART_INSTALL"
