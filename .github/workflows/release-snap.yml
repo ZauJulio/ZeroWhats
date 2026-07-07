@@ -24,7 +24,12 @@ jobs:
   # directly, so it's read off the triggering run's head_branch/head_sha).
   # ---------------------------------------------------------------------------
   context:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    # Don't gate on the triggering run's overall conclusion: `winget` is
+    # expected to fail on a package's first-ever release (see release.yml),
+    # which would mark the whole Release run "failure" even though desktop
+    # (the only thing this workflow needs) succeeded. Only skip on an
+    # explicit cancellation.
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion != 'cancelled'
     runs-on: ubuntu-22.04
     outputs:
       tag: ${{ steps.resolve.outputs.tag }}
