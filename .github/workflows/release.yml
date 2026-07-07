@@ -160,7 +160,10 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: "ZeroWhats ${{ github.ref_name }}"
           releaseBody: "See the assets below to download and install ZeroWhats."
-          releaseDraft: true
+          # Published (not draft): snap/winget download these assets by public
+          # URL right after this job, and draft-release assets 404 on an
+          # unauthenticated fetch — which is exactly what broke both of them.
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
 
@@ -186,6 +189,22 @@ jobs:
           sed -i "s/^version: .*/version: \"${{ needs.version.outputs.version }}\"/" \
             release/snap/snapcraft.yaml
 
+      # Download the .deb the `desktop` job published, using `gh` (authenticated
+      # with GITHUB_TOKEN) rather than an anonymous `curl`. The release stays a
+      # draft (by design — see the desktop job), and draft-release assets are
+      # NOT fetchable by an unauthenticated URL, which is why the snap part's own
+      # `curl` used to 404. Fetching it here — outside the confined snapcraft
+      # build, where GITHUB_TOKEN is naturally in scope — and handing snapcraft a
+      # local file sidesteps that entirely.
+      - name: Download the published .deb
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "${{ github.ref_name }}" \
+            --repo "${{ github.repository }}" \
+            --pattern "ZeroWhats_*_amd64.deb" \
+            --output release/snap/app.deb
+
       - uses: snapcore/action-build@v1
         id: build
         with:
@@ -194,7 +213,7 @@ jobs:
       - name: Attach snap to the release
         uses: softprops/action-gh-release@v2
         with:
-          draft: true
+          draft: false
           tag_name: ${{ github.ref_name }}
           files: ${{ steps.build.outputs.snap }}
 
