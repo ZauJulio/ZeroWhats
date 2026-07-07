@@ -115,14 +115,19 @@ fn show_clickable_linux(app: &AppHandle, title: String, body: String, avatar: Op
             // The app icon (resolved by name against the XDG icon theme). Stays
             // as the notification's app icon; the sender avatar is layered on
             // top via `image-data` below.
-            .icon("com.zaujulio.zerowhats")
+            //
+            // Named "zerowhats" (not the `com.zaujulio.zerowhats` app-id) because
+            // that's what the Tauri Debian/AUR bundler actually ships: it derives
+            // the desktop file and icon names from `productName` ("ZeroWhats"),
+            // installing `ZeroWhats.desktop` and `hicolor/*/apps/zerowhats.png`
+            // regardless of `identifier` in tauri.conf.json.
+            .icon("zerowhats")
             // GNOME Shell only routes a notification's `default` click back to
             // the app when it can tie the notification to a desktop entry; the
-            // `desktop-entry` hint (the app-id, matching our .desktop file) makes
-            // that link, and without it clicking the popup just dismisses it.
-            .hint(notify_rust::Hint::DesktopEntry(
-                "com.zaujulio.zerowhats".to_string(),
-            ))
+            // `desktop-entry` hint must match the installed .desktop file's
+            // basename (see comment on `.icon` above for why it's not the app-id),
+            // and without it clicking the popup just dismisses it.
+            .hint(notify_rust::Hint::DesktopEntry("ZeroWhats".to_string()))
             // The "default" action has no button; it fires when the user clicks
             // the notification popup itself.
             .action("default", "Open");
@@ -190,13 +195,11 @@ fn app_icon_image() -> Option<notify_rust::Image> {
 /// The icon to attach to a notification.
 ///
 /// On Linux the notification daemon resolves an icon by *name* against the XDG
-/// icon theme, so we pass the app-id (`com.zaujulio.zerowhats`) — the themed
-/// icon is installed under `share/icons/hicolor/*/apps/` by the Linux packagers.
-/// On other platforms we fall back to the bundled resource path
-/// (`bundle.resources` in tauri.conf.json), which those packagers ship.
-/// Linux drives notifications through `notify-rust` directly (see
-/// [`show_clickable_linux`]) and sets the app-id icon there, so this is only
-/// used on the plugin path.
+/// icon theme (see `.icon("zerowhats")` in [`show_clickable_linux`] for why
+/// that name, not the `com.zaujulio.zerowhats` identifier). On other platforms
+/// we fall back to the bundled resource path (`bundle.resources` in
+/// tauri.conf.json), which those packagers ship. Linux drives notifications
+/// through `notify-rust` directly, so this is only used on the plugin path.
 #[cfg(not(target_os = "linux"))]
 fn notification_icon(app: &AppHandle) -> Option<String> {
     app.path()

@@ -82,6 +82,7 @@ fn main() {
                 cfg.spellcheck_languages.clone(),
             );
             register_web_events(&handle);
+            lock::apply_auto_lock(&handle);
 
             if cfg.password_hash.is_some() {
                 lock::lock(&handle);
@@ -93,6 +94,14 @@ fn main() {
             Ok(())
         })
         .on_window_event(|win, event| {
+            // Focus on ANY app window resets the auto-lock idle clock — typing in
+            // Settings, or simply switching back to an already-focused window,
+            // both count as "the user is here". Handled before the main-window
+            // filter below so every window benefits, not just the main one.
+            if let WindowEvent::Focused(true) = event {
+                lock::record_activity();
+            }
+
             if win.label() != window::MAIN_LABEL {
                 return;
             }
@@ -313,6 +322,14 @@ fn register_web_events(app: &tauri::AppHandle) {
         if let Some(main) = handle.get_webview_window(window::MAIN_LABEL) {
             let _ = main.emit_to(window::MAIN_LABEL, "zw://paste-image-data", files);
         }
+    });
+
+    // Mouse/keyboard activity inside the main (WhatsApp) webview resets the
+    // auto-lock idle clock — see `lock::record_activity`. Window-focus changes
+    // on every window are handled separately in `on_window_event`, so together
+    // the timer sees activity no matter which app window the user is in.
+    app.listen("zw://activity", move |_event| {
+        lock::record_activity();
     });
 }
 
