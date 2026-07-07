@@ -36,10 +36,18 @@ you — and nothing it shouldn't:
   the system notification service. No browser permission prompts, and no MPRIS
   media-session pollution of your media keys.
 - 🔒 **App lock.** Optional password (Argon2id), with **lock-on-close** and
-  **lock-on-idle** (auto-lock after N minutes). Forgot it? On Linux you reset via
-  polkit; elsewhere ZeroWhats offers to log out and wipe local data.
+  **lock-on-idle** (auto-lock after N minutes). Removing or replacing the
+  password requires the current one, or a system-admin authentication (polkit
+  on Linux, UAC on Windows, an admin prompt on macOS) — so a thief can't just
+  strip the lock. Forgot it entirely? On Linux you reset via polkit; elsewhere
+  ZeroWhats offers to log out and wipe local data. Settings stay inaccessible
+  while the app is locked.
 - 🔢 **Tray unread counter.** The unread total is drawn as a badge right on the
   tray icon — visible on GNOME/AppIndicator, macOS and Windows.
+- 🖱️ **Tray menu.** Show, Preferences, Mute/Unmute (toggles label), a
+  separator, then Lock (once a password is set) and Quit. Per-item icons
+  render on KDE/macOS/Windows; GNOME's AppIndicator bridge doesn't support
+  per-item menu icons, so there it's labels + separator only.
 - 🛡️ **WhatsApp-only sandbox.** The app window will only ever navigate to
   WhatsApp; any other link opens in your real browser. Local UI runs under a
   strict CSP.
@@ -261,6 +269,24 @@ scripts can't `invoke()` ours. Instead they **emit events** (`zw://action`,
 dispatches. (This is what makes the hamburger menu actually open windows.)
 
 ## FAQ
+
+<details>
+<summary><strong>How do I mute notifications?</strong></summary>
+
+Use the tray menu — it's a single toggle that flips between "Mute" and
+"Unmute". Muting fully suppresses notifications (no title, no body, nothing
+shown); it's not just a "quiet" mode.
+
+</details>
+
+<details>
+<summary><strong>Ctrl+W doesn't close the app while it's locked — is that a bug?</strong></summary>
+
+No, that's intentional. On the lock screen, Ctrl+W hides the window to the
+tray (same as closing the main window) instead of closing/unlocking it — the
+app stays locked either way. It's only reachable again from the tray.
+
+</details>
 
 <details>
 <summary><strong>Does ZeroWhats have access to my messages?</strong></summary>
