@@ -97,6 +97,9 @@ jobs:
           # APPLE_CERTIFICATE is defined at job level (for the `if:` guard).
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
           security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
@@ -106,7 +109,17 @@ jobs:
           security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
           CERT_ID=$(security find-identity -v -p codesigning build.keychain | grep -o '"[^"]*"' | head -1 | tr -d '"')
-          echo "CERT_ID=$CERT_ID" >> "$GITHUB_ENV"
+          # Only the *signing* path is enabled here. Passing these to the build
+          # step's env only when a real cert exists is what keeps the unsigned
+          # build from tripping tauri-bundler's `security import` on empty vars.
+          {
+            echo "CERT_ID=$CERT_ID"
+            echo "APPLE_CERTIFICATE=$APPLE_CERTIFICATE"
+            echo "APPLE_CERTIFICATE_PASSWORD=$APPLE_CERTIFICATE_PASSWORD"
+            echo "APPLE_ID=$APPLE_ID"
+            echo "APPLE_PASSWORD=$APPLE_PASSWORD"
+            echo "APPLE_TEAM_ID=$APPLE_TEAM_ID"
+          } >> "$GITHUB_ENV"
 
       - name: Import Windows certificate
         if: matrix.platform == 'windows-latest' && env.WINDOWS_CERTIFICATE != ''
@@ -132,19 +145,17 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # macOS signing/notarization: these MUST be entirely absent when no
-          # certificate is configured. Passing them empty (e.g. an empty
-          # APPLE_SIGNING_IDENTITY from an unset CERT_ID) makes tauri-bundler
-          # *attempt* codesign and fail with "failed to import keychain
-          # certificate". Gating on APPLE_CERTIFICATE means unsigned builds fall
-          # back to ad-hoc signing, which succeeds. Set the secrets to enable
-          # real signing.
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE != '' && secrets.APPLE_CERTIFICATE_PASSWORD || '' }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_CERTIFICATE != '' && env.CERT_ID || '' }}
-          APPLE_ID: ${{ secrets.APPLE_CERTIFICATE != '' && secrets.APPLE_ID || '' }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE != '' && secrets.APPLE_PASSWORD || '' }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_CERTIFICATE != '' && secrets.APPLE_TEAM_ID || '' }}
+          # macOS signing. tauri-bundler enters its certificate-import path when
+          # APPLE_CERTIFICATE is merely *present* in the env (it reads it with
+          # `var_os`, so an empty string still counts) — importing an empty cert
+          # fails with "SecKeychainItemImport: parameters were not valid". So we
+          # must NOT define APPLE_CERTIFICATE / APPLE_* here at all when there's
+          # no cert. The gated "Import Apple Developer certificate" step above
+          # injects them (and CERT_ID) into $GITHUB_ENV *only* when the secret
+          # exists. In the unsigned case none of them are set, and we sign
+          # **ad-hoc** via APPLE_SIGNING_IDENTITY="-" — no keychain import, and
+          # ad-hoc is required for the .app to launch on Apple Silicon anyway.
+          APPLE_SIGNING_IDENTITY: ${{ env.CERT_ID || '-' }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "ZeroWhats ${{ github.ref_name }}"
