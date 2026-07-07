@@ -35,24 +35,21 @@
   </content_rating>
 
   <!--
-    Screenshots are served from the repo's main branch. Commit the referenced
-    PNGs under release/linux/screenshots/ (min. 624 px wide) so AppStream
-    validators and software centers can display them.
+    Screenshots are omitted until real PNGs exist: AppStream validation (run by
+    the tauri bundler when building the .rpm) fails on screenshot URLs that 404,
+    which would break the release. To re-enable, commit PNGs (min. 624 px wide)
+    under release/linux/screenshots/ on the main branch, then restore a
+    <screenshots> block pointing at their raw.githubusercontent.com URLs, e.g.:
+
+    <screenshots>
+      <screenshot type="default">
+        <caption>ZeroWhats main window</caption>
+        <image type="source" width="1280" height="800">
+          https://raw.githubusercontent.com/ZauJulio/ZeroWhats/main/release/linux/screenshots/main.png
+        </image>
+      </screenshot>
+    </screenshots>
   -->
-  <screenshots>
-    <screenshot type="default">
-      <caption>ZeroWhats main window</caption>
-      <image type="source" width="1280" height="800">
-        https://raw.githubusercontent.com/ZauJulio/ZeroWhats/main/release/linux/screenshots/main.png
-      </image>
-    </screenshot>
-    <screenshot>
-      <caption>App lock screen</caption>
-      <image type="source" width="1280" height="800">
-        https://raw.githubusercontent.com/ZauJulio/ZeroWhats/main/release/linux/screenshots/lock.png
-      </image>
-    </screenshot>
-  </screenshots>
 
   <releases>
     <release version="1.0.0" date="2026-06-30">
