@@ -27,15 +27,30 @@ pub fn save_config(app: tauri::AppHandle, patch: ConfigPatch) {
     window::apply_spellcheck(&app, cfg.spellcheck_enabled, cfg.spellcheck_languages.clone());
 }
 
+/// Sets (or replaces) the app-lock password. Replacing an existing password
+/// requires proving ownership — `current` must verify against the stored hash,
+/// otherwise the change is refused. Setting a password for the first time (no
+/// stored hash) needs no proof. Returns whether the password was changed.
 #[tauri::command]
-pub fn set_password(app: tauri::AppHandle, plain: Option<String>) {
+pub fn set_password(app: tauri::AppHandle, plain: String, current: Option<String>) -> bool {
     let path = config_path(&app);
     let mut cfg = Config::load(&path);
 
-    cfg.password_hash = match plain {
-        Some(p) if !p.is_empty() => password::hash(&p).ok(),
-        _ => None,
-    };
+    if plain.is_empty() {
+        return false;
+    }
+
+    // Guard replacement: an existing password can only be overwritten by someone
+    // who knows it (removing it goes through `remove_password`, which also allows
+    // an admin override).
+    if let Some(existing) = &cfg.password_hash {
+        let ok = current.as_deref().is_some_and(|c| password::verify(c, existing));
+        if !ok {
+            return false;
+        }
+    }
+
+    cfg.password_hash = password::hash(&plain).ok();
 
     let _ = cfg.save(&path);
     lock::apply_auto_lock(&app);
@@ -43,6 +58,35 @@ pub fn set_password(app: tauri::AppHandle, plain: Option<String>) {
     // Reflect the new password state in the tray menu and the injected titlebar.
     crate::tray::refresh(&app);
     window::sync_has_password(&app, cfg.password_hash.is_some());
+    true
+}
+
+/// Removes the app-lock password. Requires either the current password
+/// (`current` verifies against the stored hash) or a successful system-admin
+/// authentication (polkit on Linux, admin/sudo elsewhere via `reset_with_admin`).
+/// Returns whether the password was removed.
+#[tauri::command]
+pub fn remove_password(app: tauri::AppHandle, current: Option<String>) -> bool {
+    let path = config_path(&app);
+    let mut cfg = Config::load(&path);
+
+    let Some(existing) = &cfg.password_hash else {
+        return true; // Nothing to remove.
+    };
+
+    let by_password = current.as_deref().is_some_and(|c| password::verify(c, existing));
+    let authorized = by_password || password::reset_with_admin();
+    if !authorized {
+        return false;
+    }
+
+    cfg.password_hash = None;
+    let _ = cfg.save(&path);
+    lock::apply_auto_lock(&app);
+
+    crate::tray::refresh(&app);
+    window::sync_has_password(&app, false);
+    true
 }
 
 #[tauri::command]

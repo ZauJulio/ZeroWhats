@@ -30,3 +30,7 @@
   padding: 0.429rem 0.714rem;
   min-width: 10rem;
 }
+
+.inputError {
+  border-color: var(--danger);
+}

@@ -1,7 +1,7 @@
 //! System-tray icon: its menu, click handling, and the unread-count badge.
 
 use tauri::image::Image;
-use tauri::menu::{CheckMenuItem, Menu, MenuItem};
+use tauri::menu::{IconMenuItem, Menu, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Manager};
 
@@ -23,31 +23,220 @@ fn app_icon(_app: &AppHandle) -> Image<'static> {
     Image::from_bytes(TRAY_ICON).expect("embedded 128x128 tray icon is valid PNG bytes")
 }
 
+/// 16×16 monochrome menu-item glyphs, one `char` per pixel: `#` = opaque,
+/// anything else = transparent. Drawn as flat silhouettes so they read at menu
+/// size and inherit no external icon theme (keeps the menu consistent across
+/// desktops). Tinted to the menu foreground by [`menu_icon`].
+const ICON_SHOW: [&str; 16] = [
+    "                ",
+    "  ############  ",
+    "  #          #  ",
+    "  #          #  ",
+    "  #          #  ",
+    "  #          #  ",
+    "  #          #  ",
+    "  #          #  ",
+    "  #          #  ",
+    "  #          #  ",
+    "  #          #  ",
+    "  ############  ",
+    "                ",
+    "                ",
+    "                ",
+    "                ",
+];
+const ICON_PREFS: [&str; 16] = [
+    "                ",
+    "      ####      ",
+    "   #  ####  #   ",
+    "   ##########   ",
+    "   ##########   ",
+    "  #### ## ####  ",
+    " ####  ##  #### ",
+    " ###        ### ",
+    " ###        ### ",
+    " ####  ##  #### ",
+    "  #### ## ####  ",
+    "   ##########   ",
+    "   ##########   ",
+    "   #  ####  #   ",
+    "      ####      ",
+    "                ",
+];
+/// Bell — shown on "Mute notifications" (notifications currently audible).
+const ICON_BELL: [&str; 16] = [
+    "                ",
+    "       ##       ",
+    "      ####      ",
+    "     ######     ",
+    "     ######     ",
+    "    ########    ",
+    "    ########    ",
+    "   ##########   ",
+    "   ##########   ",
+    "  ############  ",
+    "  ############  ",
+    " ############## ",
+    "                ",
+    "      ####      ",
+    "      ####      ",
+    "                ",
+];
+/// Bell with a diagonal slash — shown on "Unmute notifications" (currently
+/// muted). The slash is a two-pixel-wide diagonal punched clear through the
+/// bell so it reads as "off" at menu size.
+const ICON_BELL_OFF: [&str; 16] = [
+    "                ",
+    "       ##       ",
+    "      ##### ##   ",
+    "     ##### ##    ",
+    "     ###  ##     ",
+    "    ####  ###    ",
+    "    ###  #####   ",
+    "   ###  ######   ",
+    "   ##  ########  ",
+    "  ##  ########   ",
+    "  #  ###### ###  ",
+    " ## ##########  ",
+    "   ##           ",
+    "  ##  ####      ",
+    " ##   ####      ",
+    "##              ",
+];
+const ICON_LOCK: [&str; 16] = [
+    "                ",
+    "      ####      ",
+    "     ######     ",
+    "    ##    ##    ",
+    "    ##    ##    ",
+    "    ##    ##    ",
+    "  ##########    ",
+    "  ##########    ",
+    "  ##########    ",
+    "  ####  ####    ",
+    "  ####  ####    ",
+    "  ####  ####    ",
+    "  ##########    ",
+    "  ##########    ",
+    "                ",
+    "                ",
+];
+const ICON_QUIT: [&str; 16] = [
+    "                ",
+    "       ##       ",
+    "       ##       ",
+    "   ##  ##  ##   ",
+    "  ##   ##   ##  ",
+    " ##    ##    ## ",
+    " ##         ## ",
+    " ##         ## ",
+    " ##         ## ",
+    " ##         ## ",
+    "  ##       ##   ",
+    "  ###     ###   ",
+    "   #########    ",
+    "     #####      ",
+    "                ",
+    "                ",
+];
+
+/// Turns a 16×16 glyph into an `Image`, painted in the menu foreground colour.
+/// Light and dark menus both need a legible icon; we pick a mid-grey that reads
+/// on either (the OS may recolour monochrome menu icons to match the theme).
+fn menu_icon(glyph: &[&str; 16]) -> Image<'static> {
+    const N: usize = 16;
+
+    let (r, g, b) = (0x8a, 0x8a, 0x8a);
+    let mut px = vec![0u8; N * N * 4];
+    
+    for (y, row) in glyph.iter().enumerate() {
+        for (x, ch) in row.chars().take(N).enumerate() {
+            if ch == '#' {
+                let i = (y * N + x) * 4;
+                px[i] = r;
+                px[i + 1] = g;
+                px[i + 2] = b;
+                px[i + 3] = 0xff;
+            }
+        }
+    }
+    Image::new_owned(px, N as u32, N as u32)
+}
+
 /// Builds the tray menu from the current config: "Mute" reflects the saved
-/// state, and "Lock" only appears once a password is configured.
+/// state, and "Lock" only appears once a password is configured. A separator
+/// isolates the "Lock" / "Quit" group from the actions above it.
+///
+/// Note: per-item menu icons render on KDE/macOS/Windows but NOT on
+/// GNOME + AppIndicator (`appindicatorsupport@rgcjonas`), whose DBusMenu bridge
+/// drops `icon-data` on normal items — there the menu shows labels + separator
+/// only. This is a backend limitation, not a bug here; the labels alone
+/// ("Mute"/"Unmute", "Lock", "Quit") stay self-explanatory.
 fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     let cfg = Config::load(&config_path(app));
-    let show = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
-    let prefs = MenuItem::with_id(app, "preferences", "Preferences", true, None::<&str>)?;
 
-    let mute = CheckMenuItem::with_id(
+    let show = IconMenuItem::with_id(
         app,
-        "mute",
-        "Mute notifications",
+        "show",
+        "Show",
         true,
-        cfg.notification_privacy.is_hidden(),
+        Some(menu_icon(&ICON_SHOW)),
         None::<&str>,
     )?;
 
-    let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+    let prefs = IconMenuItem::with_id(
+        app,
+        "preferences",
+        "Preferences",
+        true,
+        Some(menu_icon(&ICON_PREFS)),
+        None::<&str>,
+    )?;
+
+    // Mute is a plain action, not a checkbox: its label flips between "Mute" and
+    // "Unmute" so the tray reads as a single toggle. When muted, notifications
+    // are fully suppressed (privacy = Hidden).
+    let muted = cfg.notification_privacy.is_hidden();
+    let mute = IconMenuItem::with_id(
+        app,
+        "mute",
+        if muted {
+            "Unmute"
+        } else {
+            "Mute"
+        },
+        true,
+        Some(menu_icon(if muted { &ICON_BELL_OFF } else { &ICON_BELL })),
+        None::<&str>,
+    )?;
+
+    let quit = IconMenuItem::with_id(
+        app,
+        "quit",
+        "Quit",
+        true,
+        Some(menu_icon(&ICON_QUIT)),
+        None::<&str>,
+    )?;
 
     let menu = Menu::new(app)?;
     menu.append(&show)?;
     menu.append(&prefs)?;
     menu.append(&mute)?;
 
+    // Separator before the "Lock"/"Quit" group, keeping the destructive/session
+    // actions visually apart from the everyday ones.
+    menu.append(&PredefinedMenuItem::separator(app)?)?;
+
     if cfg.password_hash.is_some() {
-        let lock = MenuItem::with_id(app, "lock", "Lock", true, None::<&str>)?;
+        let lock = IconMenuItem::with_id(
+            app,
+            "lock",
+            "Lock",
+            true,
+            Some(menu_icon(&ICON_LOCK)),
+            None::<&str>,
+        )?;
         menu.append(&lock)?;
     }
 
@@ -227,7 +416,9 @@ fn render_badge(base: &Image, count: u32) -> Image<'static> {
     // White digits, centered in the badge.
     let text_x = badge_x + (badge_w - text_w) / 2;
     let text_y = badge_y + (badge_h - text_h) / 2;
+    
     let mut glyph_x = text_x;
+    
     for ch in label.chars() {
         if let Some(gi) = glyph_index(ch) {
             for (row, bits) in FONT_3X5[gi].iter().enumerate() {

@@ -9,6 +9,7 @@ import {
   getConfig,
   saveConfig,
   setPassword,
+  removePassword,
   setTheme,
 } from "../../lib/api";
 import { applyTheme } from "../../lib/theme";
@@ -35,6 +36,9 @@ type Tab = "general" | "security" | "notifications" | "advanced";
 export default function Settings() {
   const [cfg, setCfg] = useState<ConfigView | null>(null);
   const [newPassword, setNewPassword] = useState("");
+  const [removing, setRemoving] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [removeError, setRemoveError] = useState(false);
   const [tab, setTab] = useState<Tab>("general");
 
   useEffect(() => {
@@ -65,9 +69,25 @@ export default function Settings() {
     setNewPassword("");
   };
 
-  const removePassword = () => {
-    setPassword(null);
-    setCfg({ ...cfg, has_password: false });
+  // Removing the lock is privileged: it needs the current password, or (if that
+  // is left empty / wrong) a system-admin authentication triggered in the
+  // backend. We never clear the hash without one of those succeeding.
+  const confirmRemovePassword = async () => {
+    const ok = await removePassword(currentPassword || undefined);
+    if (ok) {
+      setCfg({ ...cfg, has_password: false });
+      setRemoving(false);
+      setCurrentPassword("");
+      setRemoveError(false);
+    } else {
+      setRemoveError(true);
+    }
+  };
+
+  const cancelRemove = () => {
+    setRemoving(false);
+    setCurrentPassword("");
+    setRemoveError(false);
   };
 
   const chooseFolder = async () => {
@@ -152,9 +172,33 @@ export default function Settings() {
         <Group title={t.security}>
           <Row title={t.appLock} subtitle={t.appLockDesc}>
             {cfg.has_password ? (
-              <button className={cx(ui.btn, ui.danger)} onClick={removePassword}>
-                {t.removePassword}
-              </button>
+              removing ? (
+                <div className={styles.passwordRow}>
+                  <input
+                    className={cx(ui.input, removeError && ui.inputError)}
+                    type="password"
+                    placeholder={t.currentPassword}
+                    value={currentPassword}
+                    autoFocus
+                    onChange={(e) => {
+                      setCurrentPassword(e.target.value);
+                      setRemoveError(false);
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && confirmRemovePassword()}
+                  />
+                  <button className={cx(ui.btn, ui.danger)} onClick={confirmRemovePassword}>
+                    {t.confirmRemove}
+                  </button>
+                  <button className={ui.btn} onClick={cancelRemove}>
+                    {t.cancel}
+                  </button>
+                  {removeError && <span className={styles.removeHint}>{t.wrongPassword}</span>}
+                </div>
+              ) : (
+                <button className={cx(ui.btn, ui.danger)} onClick={() => setRemoving(true)}>
+                  {t.removePassword}
+                </button>
+              )
             ) : (
               <div className={styles.passwordRow}>
                 <input
@@ -265,21 +309,24 @@ export default function Settings() {
               />
             </Row>
 
-            {cfg.spellcheck_enabled &&
-              SPELLCHECK_DICTS.map((d) => (
-                <Row key={d.code} title={d.label} subtitle={d.code}>
-                  <Toggle
-                    checked={cfg.spellcheck_languages.includes(d.code)}
-                    onChange={(on) =>
-                      update({
-                        spellcheck_languages: on
-                          ? [...cfg.spellcheck_languages, d.code]
-                          : cfg.spellcheck_languages.filter((c) => c !== d.code),
-                      })
-                    }
-                  />
-                </Row>
-              ))}
+            {cfg.spellcheck_enabled && (
+              <div className={styles.dictList}>
+                {SPELLCHECK_DICTS.map((d) => (
+                  <Row key={d.code} title={d.label}>
+                    <Toggle
+                      checked={cfg.spellcheck_languages.includes(d.code)}
+                      onChange={(on) =>
+                        update({
+                          spellcheck_languages: on
+                            ? [...cfg.spellcheck_languages, d.code]
+                            : cfg.spellcheck_languages.filter((c) => c !== d.code),
+                        })
+                      }
+                    />
+                  </Row>
+                ))}
+              </div>
+            )}
           </Group>
         </>
       )}
