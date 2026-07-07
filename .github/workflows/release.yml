@@ -141,6 +141,26 @@ jobs:
           $json.bundle.windows | Add-Member -NotePropertyName certificateThumbprint -NotePropertyValue $thumbprint -Force
           $json | ConvertTo-Json -Depth 10 | Set-Content $configPath
 
+      # tauri-action only takes the release body as a literal string
+      # (`releaseBody`), not a file path, so per-release notes written to
+      # release/notes/<tag>.md are read here and passed through as a
+      # multiline step output. Falls back to a generic line if a tag doesn't
+      # have a notes file yet, so untagged/ad-hoc releases don't fail the job.
+      - name: Read release notes
+        id: notes
+        shell: bash
+        run: |
+          notes_file="release/notes/${{ github.ref_name }}.md"
+          {
+            echo 'body<<ZW_RELEASE_NOTES_EOF'
+            if [ -f "$notes_file" ]; then
+              cat "$notes_file"
+            else
+              echo "See the assets below to download and install ZeroWhats."
+            fi
+            echo ZW_RELEASE_NOTES_EOF
+          } >> "$GITHUB_OUTPUT"
+
       - name: Build and release
         uses: tauri-apps/tauri-action@v0
         env:
@@ -159,7 +179,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "ZeroWhats ${{ github.ref_name }}"
-          releaseBody: "See the assets below to download and install ZeroWhats."
+          releaseBody: ${{ steps.notes.outputs.body }}
           # Published (not draft): snap/winget download these assets by public
           # URL right after this job, and draft-release assets 404 on an
           # unauthenticated fetch — which is exactly what broke both of them.
