@@ -1,0 +1,108 @@
+name: Release Snap
+
+# Builds and publishes the Snap package, split out from the main Release
+# workflow so a snap-only failure/rerun never touches the desktop/AUR/winget
+# jobs (or vice versa). Triggered automatically once the Release workflow
+# finishes successfully on a tag push, or manually for a re-run.
+on:
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build the snap from (e.g. v1.2.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Resolves which tag to build for: the manual-dispatch input, or the tag the
+  # triggering Release run was for (workflow_run doesn't expose ref_name
+  # directly, so it's read off the triggering run's head_branch/head_sha).
+  # ---------------------------------------------------------------------------
+  context:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-22.04
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -n "${{ inputs.tag }}" ]; then
+            tag="${{ inputs.tag }}"
+          else
+            tag="${{ github.event.workflow_run.head_branch }}"
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+
+  # ---------------------------------------------------------------------------
+  # Snap — built from release/snap/snapcraft.yaml. Version is injected from the
+  # tag so snapcraft.yaml never needs manual bumps. Uploaded to the release;
+  # publishing to the Snap Store additionally needs the SNAPCRAFT_STORE_CREDENTIALS
+  # secret (value from `snapcraft export-login`).
+  # ---------------------------------------------------------------------------
+  snap:
+    needs: context
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-22.04 # amd64, native
+            deb_pattern: "ZeroWhats_*_amd64.deb"
+          - platform: ubuntu-24.04-arm # arm64, native — snapcraft needs to run
+            deb_pattern: "ZeroWhats_*_arm64.deb" # on the same arch it's building for
+    runs-on: ${{ matrix.platform }}
+    # Hoisted to job level so the `if: env.X != ''` guard below can see it — a
+    # step-level `env:` isn't in scope when that step's own `if:` is evaluated.
+    env:
+      SNAP_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+      TAG: ${{ needs.context.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: Inject version into snapcraft.yaml
+        run: |
+          sed -i "s/^version: .*/version: \"${{ needs.context.outputs.version }}\"/" \
+            release/snap/snapcraft.yaml
+
+      # Download the .deb the Release workflow's `desktop` job published, using
+      # `gh` (authenticated with GITHUB_TOKEN) rather than an anonymous `curl`.
+      # The release is published (not draft) by the desktop job specifically so
+      # this fetch — and Winget's — can hit it unauthenticated too, but `gh` is
+      # simplest here since we already need it for the tag lookup.
+      - name: Download the published .deb
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$TAG" \
+            --repo "${{ github.repository }}" \
+            --pattern "${{ matrix.deb_pattern }}" \
+            --output release/snap/app.deb
+
+      - uses: snapcore/action-build@v1
+        id: build
+        with:
+          path: release/snap
+
+      - name: Attach snap to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: false
+          tag_name: ${{ env.TAG }}
+          files: ${{ steps.build.outputs.snap }}
+
+      - name: Publish to the Snap Store
+        if: env.SNAP_STORE_CREDENTIALS != ''
+        uses: snapcore/action-publish@v1
+        with:
+          snap: ${{ steps.build.outputs.snap }}
+          release: stable
