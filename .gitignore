@@ -57,3 +57,5 @@ Thumbs.db
 
 # Store credentials exported locally (never commit)
 DONT.md
+# Using bun; npm lockfile is not used
+package-lock.json
