@@ -35,31 +35,21 @@
   </content_rating>
 
   <!--
-    TODO: Replace these placeholder URLs with real screenshots before submitting
-    to Flathub. Flathub requires at least one screenshot with a minimum width of
-    624 px. Upload PNGs to a stable URL (e.g. the GitHub releases page or a
-    dedicated /screenshots branch in the repo) and update the <image> tags.
+    Screenshots are omitted until real PNGs exist: AppStream validation (run by
+    the tauri bundler when building the .rpm) fails on screenshot URLs that 404,
+    which would break the release. To re-enable, commit PNGs (min. 624 px wide)
+    under release/linux/screenshots/ on the main branch, then restore a
+    <screenshots> block pointing at their raw.githubusercontent.com URLs, e.g.:
 
-    Suggested shots:
-      1. Main chat window (light theme)
-      2. Main chat window (dark theme)
-      3. App-lock screen
-      4. Tray-icon unread counter
+    <screenshots>
+      <screenshot type="default">
+        <caption>ZeroWhats main window</caption>
+        <image type="source" width="1280" height="800">
+          https://raw.githubusercontent.com/ZauJulio/ZeroWhats/main/release/linux/screenshots/main.png
+        </image>
+      </screenshot>
+    </screenshots>
   -->
-  <screenshots>
-    <screenshot type="default">
-      <caption>ZeroWhats main window</caption>
-      <image type="source" width="1280" height="800">
-        https://raw.githubusercontent.com/ZauJulio/ZeroWhats/main/release/linux/screenshots/main.png
-      </image>
-    </screenshot>
-    <screenshot>
-      <caption>App lock screen</caption>
-      <image type="source" width="1280" height="800">
-        https://raw.githubusercontent.com/ZauJulio/ZeroWhats/main/release/linux/screenshots/lock.png
-      </image>
-    </screenshot>
-  </screenshots>
 
   <releases>
     <release version="1.0.0" date="2026-06-30">

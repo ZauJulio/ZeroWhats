@@ -9,10 +9,10 @@ edition = "2021"
 tauri-build = { version = "2", features = [] }
 
 [features]
-# `cargo tauri build` sets this automatically; a bare `cargo build` (as the
-# Flatpak manifest runs) does not, and without it `tauri::is_dev()` returns
-# true — the app then loads the Vite dev URL (http://localhost:1420) instead of
-# the embedded assets over `tauri://localhost`, so every non-dev build must pass
+# `cargo tauri build` sets this automatically; a bare `cargo build` does not,
+# and without it `tauri::is_dev()` returns true — the app then loads the Vite
+# dev URL (http://localhost:1420) instead of the embedded assets over
+# `tauri://localhost`, so every non-dev bare `cargo build` must pass
 # `--features custom-protocol`.
 custom-protocol = ["tauri/custom-protocol"]
 

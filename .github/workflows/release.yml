@@ -3,7 +3,7 @@ name: Release
 # Builds and publishes installers for Linux, Windows and macOS.
 #
 # Trigger by pushing a tag like `v0.1.0`, or run manually from the Actions tab
-# (optionally enabling the store packages — snap / flatpak / AUR / winget —
+# (optionally enabling the store packages — snap / AUR / winget —
 # which need the secrets documented on each job).
 on:
   push:
@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       publish_extras:
-        description: "Also publish to Snap / Flatpak / AUR / Winget (needs store secrets)"
+        description: "Also publish to Snap / AUR / Winget (needs store secrets)"
         type: boolean
         default: false
 
@@ -51,6 +51,12 @@ jobs:
           - platform: windows-latest # msi / nsis
             args: ""
     runs-on: ${{ matrix.platform }}
+    # Hoisted to job level so the signing steps' `if: env.X != ''` guards can
+    # see them — a step-level `env:` isn't in scope when that step's own `if:`
+    # is evaluated, so signing would never trigger otherwise.
+    env:
+      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+      WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
     steps:
       - uses: actions/checkout@v4
 
@@ -88,7 +94,7 @@ jobs:
       - name: Import Apple Developer certificate
         if: matrix.platform == 'macos-latest' && env.APPLE_CERTIFICATE != ''
         env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          # APPLE_CERTIFICATE is defined at job level (for the `if:` guard).
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
@@ -105,7 +111,7 @@ jobs:
       - name: Import Windows certificate
         if: matrix.platform == 'windows-latest' && env.WINDOWS_CERTIFICATE != ''
         env:
-          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          # WINDOWS_CERTIFICATE is defined at job level (for the `if:` guard).
           WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
         run: |
           New-Item -ItemType directory -Path certificate
@@ -151,6 +157,10 @@ jobs:
     needs: [version, desktop]
     if: github.event_name == 'push' || inputs.publish_extras
     runs-on: ubuntu-22.04
+    # Hoisted to job level so the `if: env.X != ''` guard below can see it — a
+    # step-level `env:` isn't in scope when that step's own `if:` is evaluated.
+    env:
+      SNAP_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
     steps:
       - uses: actions/checkout@v4
 
@@ -174,36 +184,9 @@ jobs:
       - name: Publish to the Snap Store
         if: env.SNAP_STORE_CREDENTIALS != ''
         uses: snapcore/action-publish@v1
-        env:
-          SNAP_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
         with:
           snap: ${{ steps.build.outputs.snap }}
           release: stable
-
-  # ---------------------------------------------------------------------------
-  # Flatpak — built from the manifest in release/flatpak. Bundles a single-file
-  # .flatpak attached to the release.
-  # ---------------------------------------------------------------------------
-  flatpak:
-    needs: [version, desktop]
-    if: github.event_name == 'push' || inputs.publish_extras
-    runs-on: ubuntu-22.04
-    container:
-      image: bilelmoussaoui/flatpak-github-actions:gnome-48
-      options: --privileged
-    steps:
-      - uses: actions/checkout@v4
-      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
-        with:
-          bundle: zerowhats.flatpak
-          manifest-path: release/flatpak/com.zaujulio.zerowhats.yml
-          cache-key: flatpak-builder-${{ github.sha }}
-      - name: Attach flatpak to the release
-        uses: softprops/action-gh-release@v2
-        with:
-          draft: true
-          tag_name: ${{ github.ref_name }}
-          files: zerowhats.flatpak
 
   # ---------------------------------------------------------------------------
   # AUR — publishes release/aur/PKGBUILD to the AUR. Needs the AUR_SSH_PRIVATE_KEY
@@ -213,6 +196,9 @@ jobs:
     needs: [version, desktop]
     if: (github.event_name == 'push' || inputs.publish_extras) && !contains(github.ref_name, '-')
     runs-on: ubuntu-22.04
+    # Hoisted to job level so the `if: env.AUR_KEY != ''` guard can see it.
+    env:
+      AUR_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -224,8 +210,6 @@ jobs:
       - name: Publish to the AUR
         if: env.AUR_KEY != ''
         uses: KSXGitHub/github-actions-deploy-aur@v3
-        env:
-          AUR_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
         with:
           pkgname: zerowhats-bin
           pkgbuild: release/aur/PKGBUILD
@@ -244,13 +228,14 @@ jobs:
     needs: [version, desktop]
     if: (github.event_name == 'push' || inputs.publish_extras) && !contains(github.ref_name, '-')
     runs-on: windows-latest
+    # Hoisted to job level so the `if: env.WINGET_TOKEN != ''` guard can see it.
+    env:
+      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Submit to Windows Package Manager
         if: env.WINGET_TOKEN != ''
-        env:
-          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
         shell: pwsh
         run: |
           $version = "${{ needs.version.outputs.version }}"
@@ -276,69 +261,3 @@ jobs:
               --submit `
               --token $env:WINGET_TOKEN
           }
-
-  # ---------------------------------------------------------------------------
-  # Flathub — pushes an updated manifest to the flathub/com.zaujulio.zerowhats
-  # GitHub repo so Flathub's build system picks it up automatically.
-  # Needs FLATHUB_TOKEN: a GitHub PAT with write access to that repo.
-  # Prerequisites: the app must already be accepted on Flathub (one-time manual
-  # submission). Only runs on stable releases.
-  # ---------------------------------------------------------------------------
-  flathub-publish:
-    needs: [version, flatpak]
-    if: (github.event_name == 'push' || inputs.publish_extras) && !contains(github.ref_name, '-')
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install flatpak-node-generator and flatpak-cargo-generator
-        run: |
-          pip3 install --quiet aiohttp
-          pip3 install --quiet flatpak-node-generator
-          curl -Lo /usr/local/bin/flatpak-cargo-generator \
-            https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/master/cargo/flatpak-cargo-generator.py
-          chmod +x /usr/local/bin/flatpak-cargo-generator
-
-      - name: Generate offline source manifests
-        run: |
-          flatpak-node-generator npm package-lock.json \
-            -o /tmp/node-sources.json
-          flatpak-cargo-generator src-tauri/Cargo.lock \
-            -o /tmp/cargo-sources.json
-
-      - name: Push to Flathub repo
-        if: env.FLATHUB_TOKEN != ''
-        env:
-          FLATHUB_TOKEN: ${{ secrets.FLATHUB_TOKEN }}
-        run: |
-          VERSION="${{ needs.version.outputs.version }}"
-          TAG="${{ github.ref_name }}"
-          TARBALL_URL="https://github.com/ZauJulio/ZeroWhats/archive/refs/tags/${TAG}.tar.gz"
-          SHA256=$(curl -sL "$TARBALL_URL" | sha256sum | awk '{print $1}')
-
-          git clone \
-            "https://x-access-token:${FLATHUB_TOKEN}@github.com/flathub/com.zaujulio.zerowhats.git" \
-            /tmp/flathub-repo
-          cd /tmp/flathub-repo
-
-          # Update the archive source URL and its SHA256 in the manifest
-          python3 - <<'PY'
-          import re, sys
-          manifest = open("com.zaujulio.zerowhats.yml").read()
-          import os
-          url  = os.environ["TARBALL_URL"]
-          sha  = os.environ["SHA256"]
-          manifest = re.sub(r"(url:\s+)https://github.com/ZauJulio/ZeroWhats/archive/.*", r"\g<1>" + url, manifest)
-          manifest = re.sub(r"(sha256:\s+)[a-f0-9]{64}", r"\g<1>" + sha, manifest)
-          open("com.zaujulio.zerowhats.yml", "w").write(manifest)
-          PY
-
-          cp /tmp/node-sources.json node-sources.json
-          cp /tmp/cargo-sources.json cargo-sources.json
-
-          git config user.email "zaujulio.dev@gmail.com"
-          git config user.name "ZauJulio"
-          git add com.zaujulio.zerowhats.yml node-sources.json cargo-sources.json
-          git diff --staged --quiet && echo "Nothing to commit." && exit 0
-          git commit -m "Update to $TAG"
-          git push
