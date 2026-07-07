@@ -1,51 +1,35 @@
-// App-scoped inactivity auto-lock.
+// App-scoped inactivity auto-lock — activity reporter.
 //
-// Tracks input *inside the window* (no system idle API, so it behaves the same
-// on Linux/Wayland, Windows and macOS) and invokes `lock` after the configured
-// number of idle minutes. The initial value comes from
-// `window.__ZW.autoLockMinutes`; `window.__zwArmAutoLock(minutes)` lets the
-// Settings screen re-arm it live without a reload. 0 disables it. Auto-lock is
-// only meaningful with a password set, which the backend enforces by passing 0
-// otherwise.
+// The actual idle timer lives in Rust (see `lock::spawn_watcher`), not here:
+// an in-page `setTimeout` only sees activity inside *this* webview, so typing
+// in Settings (a separate webview) or just focusing any app window would never
+// reset it, and the lock could fire while the user was actively elsewhere in
+// the app. Rust sees window-focus changes across every window already; this
+// script's only job is to forward mouse/keyboard activity *inside the WhatsApp
+// page* as a `zw://activity` event, which the same Rust timer treats the same
+// way as a window focus.
 (() => {
   "use strict";
 
   const tauri = window.__TAURI__;
-  const ACTIVITY_EVENTS = ["mousemove", "mousedown", "keydown", "wheel", "touchstart", "focus"];
+  const ACTIVITY_EVENTS = ["mousemove", "mousedown", "keydown", "wheel", "touchstart"];
 
-  let minutes = Number(window.__ZW?.autoLockMinutes) || 0;
-  let timer = null;
+  // Coalesce bursts (e.g. mousemove fires constantly) into at most one emit
+  // per second — the Rust watcher only polls once a second anyway.
+  let lastEmit = 0;
+  const reportActivity = () => {
+    const now = Date.now();
+    if (now - lastEmit < 1000) return;
+    lastEmit = now;
 
-  const lockNow = () => {
-    // App commands are blocked from this remote origin, so locking is sent as an
-    // event the Rust side listens for (event emit is a core command).
     try {
-      tauri?.event?.emit("zw://action", { action: "lock" });
+      tauri?.event?.emit("zw://activity", {});
     } catch (e) {
-      console.error("[ZeroWhats] emit lock failed", e);
+      console.error("[ZeroWhats] emit activity failed", e);
     }
-  };
-
-  const reset = () => {
-    if (timer) {
-      clearTimeout(timer);
-      timer = null;
-    }
-    if (minutes > 0) timer = setTimeout(lockNow, minutes * 60_000);
-  };
-
-  window.__zwArmAutoLock = (value) => {
-    minutes = Number(value) || 0;
-    reset();
   };
 
   for (const event of ACTIVITY_EVENTS) {
-    window.addEventListener(event, reset, { passive: true, capture: true });
+    window.addEventListener(event, reportActivity, { passive: true, capture: true });
   }
-
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) reset();
-  });
-
-  reset();
 })();
