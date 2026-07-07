@@ -35,16 +35,9 @@
   </content_rating>
 
   <!--
-    TODO: Replace these placeholder URLs with real screenshots before submitting
-    to Flathub. Flathub requires at least one screenshot with a minimum width of
-    624 px. Upload PNGs to a stable URL (e.g. the GitHub releases page or a
-    dedicated /screenshots branch in the repo) and update the <image> tags.
-
-    Suggested shots:
-      1. Main chat window (light theme)
-      2. Main chat window (dark theme)
-      3. App-lock screen
-      4. Tray-icon unread counter
+    Screenshots are served from the repo's main branch. Commit the referenced
+    PNGs under release/linux/screenshots/ (min. 624 px wide) so AppStream
+    validators and software centers can display them.
   -->
   <screenshots>
     <screenshot type="default">
