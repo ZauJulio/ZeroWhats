@@ -6,22 +6,52 @@
 // entries have been a known WebKitGTK bug across versions. Voice-note/call
 // audio playback itself is untouched — only the MediaSession API surface
 // WhatsApp uses to populate system media controls is neutered.
+//
+// The stub keeps real backing state (not a fresh object per access): the
+// first attempt returned a brand-new object on every `navigator.mediaSession`
+// read, so anything reading back a value it had just set (e.g. checking
+// `playbackState` before deciding whether to call play()) always saw the
+// default instead — which broke audio/video playback entirely. The action
+// handlers ARE still stored and, unlike before, actually invoked so any
+// WhatsApp code that relies on them firing (e.g. as part of its own
+// play/pause bookkeeping) keeps working; what's removed is only WebKitGTK's
+// own path to *observe* session state and stand up the MPRIS object for it.
 (() => {
   "use strict";
 
   try {
-    const session = navigator.mediaSession;
-    if (!session) return;
+    if (!navigator.mediaSession) return;
+
+    const state = {
+      metadata: null,
+      playbackState: "none",
+    };
+    const handlers = new Map();
+
+    const stub = {
+      get metadata() {
+        return state.metadata;
+      },
+      set metadata(value) {
+        state.metadata = value;
+      },
+      get playbackState() {
+        return state.playbackState;
+      },
+      set playbackState(value) {
+        state.playbackState = value;
+      },
+      setActionHandler(action, handler) {
+        if (handler) handlers.set(action, handler);
+        else handlers.delete(action);
+      },
+      setPositionState() {},
+    };
 
     Object.defineProperty(navigator, "mediaSession", {
       configurable: true,
       enumerable: true,
-      get: () => ({
-        metadata: null,
-        playbackState: "none",
-        setActionHandler() {},
-        setPositionState() {},
-      }),
+      get: () => stub,
       set() {},
     });
   } catch (e) {

@@ -268,6 +268,18 @@ struct UrlPayload {
     url: String,
 }
 
+#[derive(serde::Deserialize)]
+struct DownloadPayload {
+    name: String,
+    /// Base64-encoded file bytes (see `web/download.js`).
+    data: String,
+}
+
+#[derive(serde::Deserialize)]
+struct RevealPayload {
+    path: String,
+}
+
 /// Bridges the page-injected scripts to the backend. App commands can't be
 /// invoked from the remote WhatsApp origin (only core commands can be granted to
 /// it), so the scripts emit events — `event emit` is a core command — and we
@@ -311,6 +323,73 @@ fn register_web_events(app: &tauri::AppHandle) {
         }
     });
 
+    // Blob-URL attachment downloads (see `web/download.js` for why these never
+    // reach WebKitGTK's own `on_download`): the page ships the captured bytes
+    // here, base64-encoded, and this decodes + writes them to the configured
+    // downloads folder directly — or prompts "save as" when `auto_download`
+    // is disabled.
+    let handle = app.clone();
+    app.listen("zw://download", move |event| {
+        if let Ok(payload) = serde_json::from_str::<DownloadPayload>(event.payload()) {
+            use base64::Engine;
+            let bytes = match base64::engine::general_purpose::STANDARD.decode(&payload.data) {
+                Ok(b) => b,
+                Err(e) => {
+                    log::warn!("failed to decode blob download '{}': {e}", payload.name);
+                    emit_download_result(&handle, &payload.name, false, None);
+                    return;
+                }
+            };
+
+            let cfg = Config::load(&config_path(&handle));
+            if cfg.auto_download {
+                let (ok, path) = match window::save_download_bytes(&handle, &payload.name, &bytes) {
+                    Ok(p) => (true, Some(p.to_string_lossy().into_owned())),
+                    Err(e) => {
+                        log::warn!("failed to save blob download '{}': {e}", payload.name);
+                        (false, None)
+                    }
+                };
+                emit_download_result(&handle, &payload.name, ok, path);
+            } else {
+                use tauri_plugin_dialog::DialogExt;
+                let name = payload.name.clone();
+                let h = handle.clone();
+                handle
+                    .dialog()
+                    .file()
+                    .set_file_name(&payload.name)
+                    .save_file(move |chosen| {
+                        let Some(file_path) = chosen else { return };
+                        let target = file_path.as_path().unwrap_or(std::path::Path::new(""));
+                        if let Some(parent) = target.parent() {
+                            let _ = std::fs::create_dir_all(parent);
+                        }
+                        let (ok, path) = match std::fs::write(target, &bytes) {
+                            Ok(()) => (true, Some(target.to_string_lossy().into_owned())),
+                            Err(e) => {
+                                log::warn!("failed to save download '{}': {e}", name);
+                                (false, None)
+                            }
+                        };
+                        emit_download_result(&h, &name, ok, path);
+                    });
+            }
+        }
+    });
+
+    // "Show in folder" from the download toast: reveals the file in the OS file
+    // manager (Nautilus, Dolphin, Finder, Explorer).
+    let handle = app.clone();
+    app.listen("zw://reveal-download", move |event| {
+        if let Ok(payload) = serde_json::from_str::<RevealPayload>(event.payload()) {
+            use tauri_plugin_opener::OpenerExt;
+            if let Err(e) = handle.opener().reveal_item_in_dir(&payload.path) {
+                log::warn!("reveal_item_in_dir failed for '{}': {e}", payload.path);
+            }
+        }
+    });
+
     // Image paste bridge: the page asks for the clipboard image (WebKitGTK can't
     // give it one itself), we read it and emit it back as a PNG data URL. A
     // `None` result means there was no image — the page then falls back to the
@@ -331,6 +410,18 @@ fn register_web_events(app: &tauri::AppHandle) {
     app.listen("zw://activity", move |_event| {
         lock::record_activity();
     });
+}
+
+/// Emits a download-result event to the main webview so the injected toast can
+/// show success/failure feedback.
+fn emit_download_result(app: &tauri::AppHandle, name: &str, ok: bool, path: Option<String>) {
+    if let Some(main) = app.get_webview_window(window::MAIN_LABEL) {
+        let _ = main.emit_to(
+            window::MAIN_LABEL,
+            "zw://download-result",
+            serde_json::json!({ "ok": ok, "name": name, "path": path }),
+        );
+    }
 }
 
 /// Routes a titlebar/menu action (or the auto-lock timer) to its handler.
