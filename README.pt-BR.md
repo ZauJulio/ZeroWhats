@@ -27,6 +27,11 @@ sem telemetria, sem navegador embutido.
 
 </div>
 
+<p align="center">
+  <img src="release/linux/screenshots/print-global.jpg" alt="ZeroWhats — janela principal com Configurações, Sobre e Atalhos" width="49%" />
+  <img src="release/linux/screenshots/print-lock.jpg" alt="ZeroWhats — tela de bloqueio" width="49%" />
+</p>
+
 ---
 
 ## Por que ZeroWhats?

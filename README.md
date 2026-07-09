@@ -27,6 +27,11 @@ no telemetry, no bundled browser.
 
 </div>
 
+<p align="center">
+  <img src="release/linux/screenshots/print-global.jpg" alt="ZeroWhats — main window with Settings, About and Shortcuts" width="49%" />
+  <img src="release/linux/screenshots/print-lock.jpg" alt="ZeroWhats — lock screen" width="49%" />
+</p>
+
 ---
 
 ## Why ZeroWhats?
