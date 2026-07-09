@@ -60,8 +60,9 @@ consegue te dar — e nada do que ela não deveria:
 - ✍️ **Verificação ortográfica.** Ative e escolha seus dicionários (inglês,
   português, espanhol, francês, alemão, italiano…) em Configurações →
   Avançado. Palavras com erro são sublinhadas na caixa de mensagem. No Linux
-  isso usa os dicionários hunspell/enchant do sistema (incluídos como
-  dependências do pacote).
+  isso usa os dicionários hunspell/enchant do sistema — instale os que precisar
+  (veja [Dicionários de verificação ortográfica](#dicionários-de-verificação-ortográfica) abaixo).
+  No macOS e Windows, o corretor ortográfico do SO é usado automaticamente.
 - 📋 **Colar da área de transferência que realmente funciona.** Cole
   screenshots *e* arquivos ou imagens copiados do seu gerenciador de arquivos
   direto em uma conversa — uma solução para uma limitação antiga do WebKitGTK
@@ -280,6 +281,29 @@ Em vez disso eles **emitem eventos** (`zw://action`, `zw://unread`,
 `zw://notify`), o que é uma capacidade core concedida em
 `capabilities/default.json`; o `register_web_events` em `main.rs` escuta e
 despacha. (É isso que faz o menu hambúrguer realmente abrir janelas.)
+
+## Dicionários de verificação ortográfica
+
+No **Linux**, a verificação ortográfica usa as bibliotecas hunspell/enchant do
+sistema. Instale os pacotes de dicionário para os idiomas que deseja usar:
+
+```bash
+# Arch / AUR
+sudo pacman -S hunspell-en_us hunspell-pt-br hunspell-es_es hunspell-fr hunspell-de hunspell-it
+
+# Debian / Ubuntu
+sudo apt install hunspell-en-us hunspell-pt-br hunspell-es hunspell-fr hunspell-de-de hunspell-it
+
+# Fedora / RHEL
+sudo dnf install hunspell-en-US hunspell-pt-BR hunspell-es hunspell-fr hunspell-de hunspell-it
+```
+
+Depois ative a verificação ortográfica e selecione seus idiomas em
+**Configurações → Avançado**.
+
+No **macOS** e **Windows**, o corretor ortográfico nativo do SO é usado
+automaticamente com base nas configurações de idioma do sistema — nenhum
+download adicional é necessário.
 
 ## Perguntas frequentes
 

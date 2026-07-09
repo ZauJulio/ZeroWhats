@@ -57,7 +57,8 @@ you — and nothing it shouldn't:
 - ✍️ **Spell check.** Toggle it on and pick your dictionaries (English, Portuguese,
   Spanish, French, German, Italian…) in Settings → Advanced. Misspellings are
   underlined in the message box. On Linux this uses the system hunspell/enchant
-  dictionaries (shipped as package dependencies).
+  dictionaries — install the ones you need (see [Spell check dictionaries](#spell-check-dictionaries) below).
+  On macOS and Windows, the OS spell checker is used automatically.
 - 📋 **Clipboard paste that actually works.** Paste screenshots *and* files or
   images copied from your file manager straight into a chat — a workaround for a
   long-standing WebKitGTK limitation on Linux.
@@ -269,6 +270,27 @@ scripts can't `invoke()` ours. Instead they **emit events** (`zw://action`,
 `zw://unread`, `zw://notify`), which is a core capability granted in
 `capabilities/default.json`; `register_web_events` in `main.rs` listens and
 dispatches. (This is what makes the hamburger menu actually open windows.)
+
+## Spell check dictionaries
+
+On **Linux**, spell check is powered by the system's hunspell/enchant libraries.
+Install the dictionary packages for the languages you want to use:
+
+```bash
+# Arch / AUR
+sudo pacman -S hunspell-en_us hunspell-pt-br hunspell-es_es hunspell-fr hunspell-de hunspell-it
+
+# Debian / Ubuntu
+sudo apt install hunspell-en-us hunspell-pt-br hunspell-es hunspell-fr hunspell-de-de hunspell-it
+
+# Fedora / RHEL
+sudo dnf install hunspell-en-US hunspell-pt-BR hunspell-es hunspell-fr hunspell-de hunspell-it
+```
+
+Then enable spell check and select your languages in **Settings → Advanced**.
+
+On **macOS** and **Windows**, the OS built-in spell checker is used automatically
+based on your system language settings — no extra downloads needed.
 
 ## FAQ
 
