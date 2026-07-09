@@ -1,6 +1,6 @@
 name: zerowhats
 base: core22
-version: "1.3.0"
+version: "1.4.0"
 summary: A privacy-first WhatsApp Web desktop client
 description: |
   ZeroWhats is a minimalist, privacy-first WhatsApp Web desktop client for
