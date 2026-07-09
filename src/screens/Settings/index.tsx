@@ -159,11 +159,13 @@ export default function Settings() {
               <Toggle checked={cfg.auto_download} onChange={(v) => update({ auto_download: v })} />
             </Row>
 
-            <Row title={t.downloadFolder}>
-              <button className={ui.btn} onClick={chooseFolder}>
-                {cfg.download_path ?? t.choose}
-              </button>
-            </Row>
+            {cfg.auto_download && (
+              <Row title={t.downloadFolder}>
+                <button className={ui.btn} onClick={chooseFolder}>
+                  {cfg.download_path ?? t.choose}
+                </button>
+              </Row>
+            )}
           </Group>
         </>
       )}

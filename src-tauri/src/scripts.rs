@@ -24,6 +24,10 @@ pub const MPRIS: &str = include_str!("web/mpris.js");
 /// Mirrors WhatsApp's unread count onto the tray (`set_unread`).
 pub const UNREAD_BADGE: &str = include_str!("web/unread-badge.js");
 
+/// Captures blob-URL attachment downloads (WebKitGTK's native download
+/// machinery never sees them) and ships the bytes to Rust to write to disk.
+pub const DOWNLOAD: &str = include_str!("web/download.js");
+
 /// Reports in-page mouse/keyboard activity as `zw://activity`, resetting the
 /// auto-lock idle clock that actually lives in Rust (`lock::spawn_watcher`).
 pub const AUTO_LOCK: &str = include_str!("web/auto-lock.js");

@@ -4,7 +4,7 @@
 
 use std::path::{Path, PathBuf};
 use tauri::webview::DownloadEvent;
-use tauri::{AppHandle, Manager, Url, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Emitter, Manager, Url, WebviewUrl, WebviewWindowBuilder};
 
 use crate::config::{config_path, Config, Theme};
 use crate::{commands, lock, scripts};
@@ -59,12 +59,38 @@ fn download_target(app: &AppHandle, url: &Url, suggested: &Path) -> PathBuf {
         })
         .unwrap_or_else(|| "download".to_string());
 
+    target_for_name(app, &name)
+}
+
+/// Same de-duplicated target-picking as [`download_target`], for callers that
+/// only have a suggested filename (no URL) — see [`save_download_bytes`].
+fn target_for_name(app: &AppHandle, name: &str) -> PathBuf {
+    let name = if name.trim().is_empty() {
+        "download"
+    } else {
+        name
+    };
+
     let target = unique_path(download_dir(app).join(name));
     if let Some(parent) = target.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
 
     target
+}
+
+/// Writes bytes captured from a page-side blob download (see `web/download.js`)
+/// to the configured downloads folder. WhatsApp Web's attachment "download"
+/// button saves via a `blob:` URL + synthetic `<a download>` click, which never
+/// reaches WebKitGTK's own download machinery — that only sees real
+/// network-navigated downloads (e.g. a `Content-Disposition: attachment`
+/// response), not in-page blobs. So the page-injected script reads the blob
+/// itself and ships the bytes here over the same `zw://` event bridge used
+/// elsewhere, and this writes them directly instead of relying on `on_download`.
+pub fn save_download_bytes(app: &AppHandle, name: &str, bytes: &[u8]) -> std::io::Result<PathBuf> {
+    let target = target_for_name(app, name);
+    std::fs::write(&target, bytes)?;
+    Ok(target)
 }
 
 /// Fully transparent: these windows are `.transparent(true)` for rounded
@@ -142,10 +168,24 @@ pub fn build_main(app: &AppHandle, cfg: &Config) -> tauri::Result<()> {
     .on_navigation(move |url| allow_navigation(&nav_app, url))
     // WhatsApp triggers its own downloads (blob/anchor); route them to the
     // configured folder so they actually save.
-    .on_download(move |_webview, event| {
-        if let DownloadEvent::Requested { url, destination } = event {
-            let target = download_target(&dl_app, &url, destination);
-            *destination = target;
+    .on_download(move |webview, event| {
+        match event {
+            DownloadEvent::Requested { url, destination } => {
+                let target = download_target(&dl_app, &url, destination);
+                *destination = target;
+            }
+            DownloadEvent::Finished { url: _, path, success } => {
+                let name = path.as_ref()
+                    .and_then(|p| p.file_name())
+                    .map(|n| n.to_string_lossy().into_owned());
+                let path_str = path.as_ref().map(|p| p.to_string_lossy().into_owned());
+                let _ = webview.emit_to(
+                    MAIN_LABEL,
+                    "zw://download-result",
+                    serde_json::json!({ "ok": success, "name": name, "path": path_str }),
+                );
+            }
+            _ => {}
         }
         true
     })
@@ -176,6 +216,7 @@ pub fn build_main(app: &AppHandle, cfg: &Config) -> tauri::Result<()> {
 
     builder = builder
         .initialization_script(scripts::MPRIS)
+        .initialization_script(scripts::DOWNLOAD)
         .initialization_script(scripts::AUTO_LOCK)
         .initialization_script(scripts::PRIVACY_BLUR)
         .initialization_script(scripts::LINKS)
