@@ -5,6 +5,7 @@
   "windows": ["main", "settings", "about", "shortcuts", "lock"],
   "permissions": [
     "core:default",
+    "core:app:allow-version",
     "core:event:allow-emit",
     "core:event:allow-listen",
     "core:event:allow-unlisten",

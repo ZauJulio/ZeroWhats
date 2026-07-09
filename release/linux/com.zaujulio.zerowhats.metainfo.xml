@@ -52,6 +52,13 @@
   -->
 
   <releases>
+    <release version="1.3.0" date="2026-07-08">
+      <description>
+        <p>Download toast with "Show in folder" and "Settings" buttons, save-as
+        dialog when auto-download is off, hunspell dictionaries moved to optional
+        dependencies, MPRIS stub refinements.</p>
+      </description>
+    </release>
     <release version="1.1.0" date="2026-07-07">
       <description>
         <p>Spell check with selectable dictionaries, clipboard image/file paste,

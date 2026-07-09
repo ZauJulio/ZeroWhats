@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { getVersion } from "@tauri-apps/api/app";
 import { ExternalLink, Globe, Code2, Bug, Mail } from "lucide-react";
 import { AppWindow, ui } from "../../ui/components";
 import { getConfig, openUrl } from "../../lib/api";
@@ -23,8 +24,11 @@ function LinkRow({ icon, label, uri }: { icon: React.ReactNode; label: string; u
 }
 
 export default function About() {
+  const [version, setVersion] = useState("");
+
   useEffect(() => {
     getConfig().then((c) => applyTheme(c.theme));
+    getVersion().then(setVersion);
   }, []);
   useReveal();
 
@@ -34,7 +38,7 @@ export default function About() {
         <img src="/icon.png" alt="ZeroWhats" />
         <h1>ZeroWhats</h1>
         <div className={s.dev}>by ZauJulio</div>
-        <span className={s.pill}>1.0.0</span>
+        {version && <span className={s.pill}>{version}</span>}
         <p className={s.comments}>{t.aboutComments}</p>
         <div className={cx(ui.card, s.links)}>
           <LinkRow icon={<Globe size={18} />} label={t.website} uri={REPO} />
