@@ -89,7 +89,7 @@ Pegue o arquivo para sua plataforma na [última release](https://github.com/ZauJ
 | ----------- | --------------------------------------- | ------------------------------------------------------------------ |
 | **Linux**   | `.AppImage`                             | Portátil — dê `chmod +x` e execute.                                |
 | **Linux**   | `.deb` / `.rpm`                         | `sudo apt install ./ZeroWhats_*.deb` / `sudo dnf install ./*.rpm` |
-| **Linux**   | Snap / AUR (`zerowhats-bin`)            | Veja [`release/`](release/).                                       |
+| **Linux**   | AUR (`zerowhats-bin`)                   | Veja [`release/`](release/).                                       |
 | **Windows** | `.msi` / `-setup.exe`                   | Usa o WebView2 embutido.                                            |
 | **macOS**   | `.dmg`                                  | Builds universais para Apple Silicon e Intel.                      |
 
@@ -178,7 +178,7 @@ ZeroWhats/
 │  ├─ capabilities/             # ACL do Tauri (permissões de origem remota)
 │  ├─ icons/                    # ícones do app (gerados a partir de ../icon.svg)
 │  └─ tauri.conf.json
-├─ release/                     # definições de empacotamento (linux/snap/aur/win/mac)
+├─ release/                     # definições de empacotamento (linux/aur/win/mac)
 ├─ icon.svg                     # fonte do ícone
 └─ .github/workflows/           # CI — release.yml
 ```
@@ -417,7 +417,7 @@ Quer ver seu avatar aqui? Abra um PR!
 ## Releases e empacotamento
 
 `bun run tauri build` gera instaladores para o SO atual. A matriz completa
-multiplataforma e as definições de Snap/AUR vivem em
+multiplataforma e as definições do AUR vivem em
 [`release/`](release/), e `.github/workflows/release.yml` constrói e publica
 tudo isso a cada push de tag `vX.Y.Z`. Veja [`release/README.md`](release/README.md).
 

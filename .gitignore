@@ -18,7 +18,6 @@ release/**/*.exe
 release/**/*.msi
 release/**/*.dmg
 release/**/*.app
-release/**/*.snap
 release/**/*.tar.gz
 release/**/*.sig
 release/_artifacts/
