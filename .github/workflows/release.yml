@@ -4,8 +4,7 @@ name: Release
 #
 # Trigger by pushing a tag like `v0.1.0`, or run manually from the Actions tab
 # (optionally enabling the store packages — AUR / winget — which need the
-# secrets documented on each job). Snap is published by release-snap.yml,
-# which triggers once this workflow finishes.
+# secrets documented on each job).
 on:
   push:
     tags: ["v*"]
@@ -184,17 +183,13 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: "ZeroWhats ${{ github.ref_name }}"
           releaseBody: ${{ steps.notes.outputs.body }}
-          # Published (not draft): snap/winget download these assets by public
+          # Published (not draft): winget downloads these assets by public
           # URL right after this job, and draft-release assets 404 on an
-          # unauthenticated fetch — which is exactly what broke both of them.
+          # unauthenticated fetch — which is exactly what broke it.
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
 
-  # ---------------------------------------------------------------------------
-  # Snap lives in its own workflow (release-snap.yml), triggered once this
-  # workflow finishes — see that file for why (isolating snap-only
-  # failures/reruns from the desktop/AUR/winget jobs here).
   # ---------------------------------------------------------------------------
   # AUR — publishes release/aur/PKGBUILD to the AUR. Needs the AUR_SSH_PRIVATE_KEY
   # secret (the deploy key registered on your AUR account).

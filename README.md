@@ -82,7 +82,7 @@ Grab the file for your platform from the [latest release](https://github.com/Zau
 | ----------- | -------------------------------------- | ----------------------------------------------------------------- |
 | **Linux**   | `.AppImage`                            | Portable — `chmod +x` and run.                                    |
 | **Linux**   | `.deb` / `.rpm`                        | `sudo apt install ./ZeroWhats_*.deb` / `sudo dnf install ./*.rpm` |
-| **Linux**   | Snap / AUR (`zerowhats-bin`)           | See [`release/`](release/).                                       |
+| **Linux**   | AUR (`zerowhats-bin`)                  | See [`release/`](release/).                                       |
 | **Windows** | `.msi` / `-setup.exe`                  | Uses the built-in WebView2.                                       |
 | **macOS**   | `.dmg`                                 | Universal builds for Apple Silicon & Intel.                       |
 
@@ -168,7 +168,7 @@ ZeroWhats/
 │  ├─ capabilities/             # Tauri ACL (remote-origin permissions)
 │  ├─ icons/                    # app icons (generated from ../icon.svg)
 │  └─ tauri.conf.json
-├─ release/                     # packaging defs (linux/snap/aur/win/mac)
+├─ release/                     # packaging defs (linux/aur/win/mac)
 ├─ icon.svg                     # icon source
 └─ .github/workflows/           # CI — release.yml
 ```
@@ -399,7 +399,7 @@ Want to see your avatar here? Open a PR!
 ## Releases & packaging
 
 `bun run tauri build` produces installers for the current OS. The full
-cross-platform matrix and the Snap/AUR definitions live in
+cross-platform matrix and the AUR definitions live in
 [`release/`](release/), and `.github/workflows/release.yml` builds and publishes
 them all on a `vX.Y.Z` tag push. See [`release/README.md`](release/README.md).
 

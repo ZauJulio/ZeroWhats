@@ -69,10 +69,6 @@ bump "release/aur/PKGBUILD" \
   "pkgver=$OLD" \
   "pkgver=$NEW"
 
-bump "release/snap/snapcraft.yaml" \
-  "version: \"$OLD\"" \
-  "version: \"$NEW\""
-
 bump "release/windows/winget/ZauJulio.ZeroWhats.yaml" \
   "PackageVersion: $OLD" \
   "PackageVersion: $NEW"
