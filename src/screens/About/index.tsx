@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { getVersion } from "@tauri-apps/api/app";
-import { ExternalLink, Globe, Code2, Bug, Mail } from "lucide-react";
+import { emit } from "@tauri-apps/api/event";
+import { ExternalLink, Globe, Code2, Bug, Mail, RefreshCw } from "lucide-react";
 import { AppWindow, ui } from "../../ui/components";
-import { getConfig, openUrl } from "../../lib/api";
+import { getConfig, openUrl, checkForUpdate } from "../../lib/api";
 import { applyTheme } from "../../lib/theme";
 import { useReveal } from "../../lib/window";
 import { t } from "../../lib/translations";
@@ -25,12 +26,30 @@ function LinkRow({ icon, label, uri }: { icon: React.ReactNode; label: string; u
 
 export default function About() {
   const [version, setVersion] = useState("");
+  const [updateStatus, setUpdateStatus] = useState<"idle" | "checking" | "upToDate" | "available">(
+    "idle",
+  );
 
   useEffect(() => {
     getConfig().then((c) => applyTheme(c.theme));
     getVersion().then(setVersion);
   }, []);
   useReveal();
+
+  const handleCheckUpdate = async () => {
+    setUpdateStatus("checking");
+    try {
+      const r = await checkForUpdate();
+      if (r) {
+        setUpdateStatus("available");
+        emit("zw://action", { action: "update" });
+      } else {
+        setUpdateStatus("upToDate");
+      }
+    } catch {
+      setUpdateStatus("idle");
+    }
+  };
 
   return (
     <AppWindow title="About ZeroWhats">
@@ -39,6 +58,18 @@ export default function About() {
         <h1>ZeroWhats</h1>
         <div className={s.dev}>by ZauJulio</div>
         {version && <span className={s.pill}>{version}</span>}
+        <button
+          className={s.updateBtn}
+          onClick={handleCheckUpdate}
+          disabled={updateStatus === "checking"}
+        >
+          <RefreshCw size={14} className={updateStatus === "checking" ? s.spin : ""} />
+          {updateStatus === "checking"
+            ? t.checking
+            : updateStatus === "upToDate"
+              ? t.upToDate
+              : t.checkForUpdates}
+        </button>
         <p className={s.comments}>{t.aboutComments}</p>
         <div className={cx(ui.card, s.links)}>
           <LinkRow icon={<Globe size={18} />} label={t.website} uri={REPO} />

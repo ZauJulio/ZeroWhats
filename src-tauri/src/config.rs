@@ -158,7 +158,16 @@ impl Config {
         }
 
         let json = serde_json::to_string_pretty(self).expect("Config is always serializable");
-        std::fs::write(path, json)
+        std::fs::write(path, &json)?;
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let perms = std::fs::Permissions::from_mode(0o600);
+            std::fs::set_permissions(path, perms)?;
+        }
+
+        Ok(())
     }
 }
 

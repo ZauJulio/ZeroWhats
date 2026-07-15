@@ -24,7 +24,11 @@ pub fn save_config(app: tauri::AppHandle, patch: ConfigPatch) {
     let _ = cfg.save(&path);
     apply_autostart(&app, cfg.auto_start);
     lock::apply_auto_lock(&app);
-    window::apply_spellcheck(&app, cfg.spellcheck_enabled, cfg.spellcheck_languages.clone());
+    window::apply_spellcheck(
+        &app,
+        cfg.spellcheck_enabled,
+        cfg.spellcheck_languages.clone(),
+    );
 }
 
 /// Sets (or replaces) the app-lock password. Replacing an existing password
@@ -44,7 +48,9 @@ pub fn set_password(app: tauri::AppHandle, plain: String, current: Option<String
     // who knows it (removing it goes through `remove_password`, which also allows
     // an admin override).
     if let Some(existing) = &cfg.password_hash {
-        let ok = current.as_deref().is_some_and(|c| password::verify(c, existing));
+        let ok = current
+            .as_deref()
+            .is_some_and(|c| password::verify(c, existing));
         if !ok {
             return false;
         }
@@ -74,7 +80,9 @@ pub fn remove_password(app: tauri::AppHandle, current: Option<String>) -> bool {
         return true; // Nothing to remove.
     };
 
-    let by_password = current.as_deref().is_some_and(|c| password::verify(c, existing));
+    let by_password = current
+        .as_deref()
+        .is_some_and(|c| password::verify(c, existing));
     let authorized = by_password || password::reset_with_admin();
     if !authorized {
         return false;
@@ -140,10 +148,17 @@ pub fn unlock(app: tauri::AppHandle, password: String) -> bool {
     lock::unlock(&app, &password)
 }
 
-/// Opens a URL (or `mailto:`) in the user's default handler.
+/// Opens a URL (or `mailto:`) in the user's default handler. Only http(s) and
+/// mailto schemes are allowed to prevent local file or protocol handler abuse.
 #[tauri::command]
 pub fn open_url(app: tauri::AppHandle, url: String) {
-    open_external(&app, &url);
+    if let Ok(parsed) = tauri::Url::parse(&url) {
+        if matches!(parsed.scheme(), "http" | "https" | "mailto") {
+            open_external(&app, &url);
+        } else {
+            log::warn!("open_url: blocked scheme '{}'", parsed.scheme());
+        }
+    }
 }
 
 /// Cross-platform "open in the user's default app" via the opener plugin. Used by

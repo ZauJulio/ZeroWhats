@@ -82,3 +82,6 @@ pub fn bootstrap(
 
 /// Forces `spellcheck=true` on WhatsApp's composer when enabled.
 pub const SPELLCHECK: &str = include_str!("web/spellcheck.js");
+
+/// Shows a banner when a new version is available (background check).
+pub const UPDATE_BANNER: &str = include_str!("web/update-banner.js");

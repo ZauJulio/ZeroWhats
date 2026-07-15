@@ -1,6 +1,6 @@
 [package]
 name = "zerowhats"
-version = "1.4.0"
+version = "1.4.1"
 description = "ZeroWhats — a privacy-first WhatsApp Web desktop client"
 authors = ["ZauJulio"]
 edition = "2021"
@@ -29,6 +29,7 @@ png = "0.17"
 argon2 = "0.5"
 rand_core = { version = "0.6", features = ["getrandom"] }
 log = "0.4"
+ureq = "3"
 tauri-plugin-dialog = "2.7.1"
 tauri-plugin-autostart = "2.5.1"
 tauri-plugin-log = "2"

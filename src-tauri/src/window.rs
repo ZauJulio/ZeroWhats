@@ -11,7 +11,7 @@ use crate::{commands, lock, scripts};
 
 /// Where downloads land: the configured `download_path`, else the OS Downloads
 /// folder, else the current dir.
-fn download_dir(app: &AppHandle) -> PathBuf {
+pub fn download_dir_public(app: &AppHandle) -> PathBuf {
     let cfg = Config::load(&config_path(app));
 
     if let Some(path) = cfg.download_path.filter(|p| !p.trim().is_empty()) {
@@ -21,6 +21,10 @@ fn download_dir(app: &AppHandle) -> PathBuf {
     app.path()
         .download_dir()
         .unwrap_or_else(|_| PathBuf::from("."))
+}
+
+fn download_dir(app: &AppHandle) -> PathBuf {
+    download_dir_public(app)
 }
 
 /// Avoids clobbering an existing file by appending " (1)", " (2)", …
@@ -174,8 +178,13 @@ pub fn build_main(app: &AppHandle, cfg: &Config) -> tauri::Result<()> {
                 let target = download_target(&dl_app, &url, destination);
                 *destination = target;
             }
-            DownloadEvent::Finished { url: _, path, success } => {
-                let name = path.as_ref()
+            DownloadEvent::Finished {
+                url: _,
+                path,
+                success,
+            } => {
+                let name = path
+                    .as_ref()
                     .and_then(|p| p.file_name())
                     .map(|n| n.to_string_lossy().into_owned());
                 let path_str = path.as_ref().map(|p| p.to_string_lossy().into_owned());
@@ -188,8 +197,7 @@ pub fn build_main(app: &AppHandle, cfg: &Config) -> tauri::Result<()> {
             _ => {}
         }
         true
-    })
-    ;
+    });
 
     builder = builder.initialization_script(scripts::bootstrap(
         cfg.theme.wa_value(),
@@ -225,11 +233,16 @@ pub fn build_main(app: &AppHandle, cfg: &Config) -> tauri::Result<()> {
         .initialization_script(scripts::TITLEBAR)
         .initialization_script(scripts::RESIZE_HANDLES)
         .initialization_script(scripts::CLIPBOARD_IMAGE)
-        .initialization_script(scripts::SPELLCHECK);
+        .initialization_script(scripts::SPELLCHECK)
+        .initialization_script(scripts::UPDATE_BANNER);
 
     // Finish building the window; `.build()` returns the created WebviewWindow.
     let _ = builder.build()?;
-    log::info!("built main window (label={}) minimal={}", MAIN_LABEL, minimal);
+    log::info!(
+        "built main window (label={}) minimal={}",
+        MAIN_LABEL,
+        minimal
+    );
     Ok(())
 }
 
@@ -368,7 +381,11 @@ fn open_react_window(app: &AppHandle, label: &str, title: &str, size: (f64, f64)
         return;
     }
 
-    log::info!("open_react_window: creating window label={} title={}", label, title);
+    log::info!(
+        "open_react_window: creating window label={} title={}",
+        label,
+        title
+    );
 
     // Created hidden; the React screen calls `show()` once it has painted, so the
     // window appears fully rendered instead of flashing white → background →
@@ -404,6 +421,10 @@ pub fn open_settings(app: &AppHandle) {
 
 pub fn open_about(app: &AppHandle) {
     open_react_window(app, "about", "About ZeroWhats", (400.0, 600.0), false);
+}
+
+pub fn open_update(app: &AppHandle) {
+    open_react_window(app, "update", "ZeroWhats — Update", (480.0, 520.0), false);
 }
 
 pub fn open_shortcuts(app: &AppHandle) {

@@ -9,6 +9,7 @@ mod notification;
 mod password;
 mod scripts;
 mod tray;
+mod updater;
 mod window;
 
 use config::{config_path, Config};
@@ -46,7 +47,7 @@ fn main() {
             tauri_plugin_window_state::Builder::default()
                 // Only the main window's geometry is worth remembering; the modal
                 // screens stay centered at their fixed sizes.
-                .with_denylist(&["settings", "about", "shortcuts", "lock"])
+                .with_denylist(&["settings", "about", "shortcuts", "lock", "update"])
                 .build(),
         )
         .plugin(tauri_plugin_opener::init())
@@ -67,6 +68,7 @@ fn main() {
             commands::set_theme,
             commands::unlock,
             commands::open_url,
+            updater::check_for_update,
         ])
         .setup(|app| {
             let handle = app.handle().clone();
@@ -91,6 +93,7 @@ fn main() {
 
             tray::build(&handle)?;
             reassert_tray_menu(&handle);
+            updater::start_background_check(&handle);
             Ok(())
         })
         .on_window_event(|win, event| {
@@ -319,7 +322,13 @@ fn register_web_events(app: &tauri::AppHandle) {
     let handle = app.clone();
     app.listen("zw://open-external", move |event| {
         if let Ok(payload) = serde_json::from_str::<UrlPayload>(event.payload()) {
-            commands::open_external(&handle, &payload.url);
+            if let Ok(url) = tauri::Url::parse(&payload.url) {
+                if matches!(url.scheme(), "http" | "https" | "mailto") {
+                    commands::open_external(&handle, &payload.url);
+                } else {
+                    log::warn!("blocked open-external with scheme '{}'", url.scheme());
+                }
+            }
         }
     });
 
@@ -330,7 +339,19 @@ fn register_web_events(app: &tauri::AppHandle) {
     // is disabled.
     let handle = app.clone();
     app.listen("zw://download", move |event| {
-        if let Ok(payload) = serde_json::from_str::<DownloadPayload>(event.payload()) {
+        if let Ok(mut payload) = serde_json::from_str::<DownloadPayload>(event.payload()) {
+            payload.name = std::path::Path::new(&payload.name)
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_else(|| "download".into());
+
+            const MAX_DOWNLOAD_B64: usize = 341_333_334; // ~256 MB decoded
+            if payload.data.len() > MAX_DOWNLOAD_B64 {
+                log::warn!("blob download '{}' exceeds 256 MB limit", payload.name);
+                emit_download_result(&handle, &payload.name, false, None);
+                return;
+            }
+
             use base64::Engine;
             let bytes = match base64::engine::general_purpose::STANDARD.decode(&payload.data) {
                 Ok(b) => b,
@@ -383,9 +404,23 @@ fn register_web_events(app: &tauri::AppHandle) {
     let handle = app.clone();
     app.listen("zw://reveal-download", move |event| {
         if let Ok(payload) = serde_json::from_str::<RevealPayload>(event.payload()) {
-            use tauri_plugin_opener::OpenerExt;
-            if let Err(e) = handle.opener().reveal_item_in_dir(&payload.path) {
-                log::warn!("reveal_item_in_dir failed for '{}': {e}", payload.path);
+            let reveal = std::path::Path::new(&payload.path);
+            let dl_dir = window::download_dir_public(&handle);
+            let ok = reveal
+                .canonicalize()
+                .ok()
+                .zip(dl_dir.canonicalize().ok())
+                .is_some_and(|(r, d)| r.starts_with(&d));
+            if ok {
+                use tauri_plugin_opener::OpenerExt;
+                if let Err(e) = handle.opener().reveal_item_in_dir(&payload.path) {
+                    log::warn!("reveal_item_in_dir failed for '{}': {e}", payload.path);
+                }
+            } else {
+                log::warn!(
+                    "blocked reveal-download outside downloads dir: '{}'",
+                    payload.path
+                );
             }
         }
     });
@@ -431,6 +466,7 @@ fn dispatch_action(app: &tauri::AppHandle, action: &str) {
         "settings" => window::open_settings(app),
         "shortcuts" => window::open_shortcuts(app),
         "about" => window::open_about(app),
+        "update" => window::open_update(app),
         other => log::warn!("unknown menu action: {other}"),
     }
 }

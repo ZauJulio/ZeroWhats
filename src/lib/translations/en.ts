@@ -48,7 +48,8 @@ export const EN: Strings = {
   notifPrivacyGeneric: "Sender only, hide message",
   notifPrivacyHidden: "Hide notifications",
   hideOnUnfocus: "Hide Content When Unfocused",
-  hideOnUnfocusDesc: "Blur the window when it loses focus (protects screenshots and screen sharing)",
+  hideOnUnfocusDesc:
+    "Blur the window when it loses focus (protects screenshots and screen sharing)",
   advanced: "Advanced",
   hwAccel: "Hardware Acceleration",
   hwAccelDesc: "Use the GPU to render WhatsApp Web (takes effect after restart)",
@@ -81,4 +82,14 @@ export const EN: Strings = {
   wipeConfirmBody:
     "There is no system-level password reset on this platform. To regain access, ZeroWhats can remove the lock by logging out of WhatsApp and erasing all local data (session, settings and password). You will need to scan the QR code again. Continue?",
   wipeConfirmOk: "Log out & erase",
+
+  updates: "Updates",
+  checkForUpdates: "Check for Updates",
+  checkForUpdatesDesc: "Check if a newer version of ZeroWhats is available",
+  upToDate: "You're up to date",
+  updateAvailable: "Update available",
+  newVersion: "New version",
+  releaseNotes: "Release Notes",
+  downloadUpdate: "Download",
+  checking: "Checking",
 };
