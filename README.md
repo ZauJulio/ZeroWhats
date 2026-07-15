@@ -11,7 +11,7 @@
 Small, fast, native — built with [Tauri](https://tauri.app) + [Preact](https://preactjs.com). No Electron,
 no telemetry, no bundled browser.
 
-<sub>Native notifications · App lock with auto-lock · Tray unread counter · WhatsApp-only sandbox</sub>
+<sub>Native notifications · App lock with auto-lock · Tray unread counter · WhatsApp-only sandbox · Built-in update checker</sub>
 
 <br />
 
@@ -71,8 +71,38 @@ you — and nothing it shouldn't:
   (Safari) user-agent, so WhatsApp serves the WebKit-tested code path.
 - 🪟 **Custom frameless window** with an in-page titlebar: maximize button,
   double-click-to-maximize, and edge/corner resize grips.
+- 🔄 **Built-in update checker.** A background thread queries the GitHub Releases
+  API once a week (no telemetry, no data sent). When a new version is found, a
+  dismissible banner appears on the WhatsApp page. You can also check manually
+  from the hamburger menu, the About page, or Settings → General. The Update
+  screen shows full release notes and a one-click link to download.
 - 🪶 **Tiny & fast.** A size-optimized Rust binary and the system WebView — a
   fraction of an Electron app's footprint.
+
+## Security hardening
+
+ZeroWhats treats the WhatsApp Web page as **untrusted** — all communication
+between the remote origin and the Rust backend goes through a narrow
+`zw://` event bridge, never direct command invocation. On top of that:
+
+- **Scheme allowlist** — the open-external handler only forwards `http`,
+  `https`, and `mailto` URLs. Protocol handlers like `file://` or `steam://`
+  are blocked, preventing a compromised page from launching local applications.
+- **Download sanitization** — filenames are stripped to their base name
+  component (no `../../` traversal) and blob payloads are capped at 256 MB.
+- **Path containment** — "show in folder" validates that the target is inside
+  the configured download directory before revealing it to the file manager.
+- **Brute-force protection** — the unlock flow enforces server-side exponential
+  backoff (1 → 2 → 4 → … → 30 s) after 3 failed password attempts.
+- **Config file permissions** — on Linux/macOS, `config.json` is written with
+  `0600` permissions so other users on the same machine cannot read the
+  password hash.
+- **Correct atomic ordering** — the lock flag uses `Acquire`/`Release` instead
+  of `Relaxed` for correct cross-thread visibility on ARM.
+- **No `innerHTML`** — all injected-script DOM construction uses `textContent`
+  and the DOM API; no untrusted data is interpolated as HTML.
+
+See [SECURITY.md](SECURITY.md) for the full threat model.
 
 ## Install
 
@@ -139,7 +169,8 @@ ZeroWhats/
 │  │  ├─ Settings/              #     index.tsx + Settings.module.css
 │  │  ├─ About/                 #     index.tsx + About.module.css
 │  │  ├─ Shortcuts/             #     index.tsx + Shortcuts.module.css
-│  │  └─ Lock/                  #     index.tsx + Lock.module.css
+│  │  ├─ Lock/                  #     index.tsx + Lock.module.css
+│  │  └─ Update/                #     index.tsx + Update.module.css
 │  ├─ App.tsx                   #   routes a screen by the window's label
 │  └─ styles.css                #   global tokens, theme vars, resets
 ├─ src-tauri/
@@ -152,6 +183,7 @@ ZeroWhats/
 │  │  ├─ commands.rs            #     thin #[command] IPC layer (local windows)
 │  │  ├─ config.rs              #     config model + DTOs
 │  │  ├─ password.rs            #     Argon2id hashing + polkit reset
+│  │  ├─ updater.rs             #     GitHub release checker + semver compare
 │  │  ├─ scripts.rs             #     loads web/*.js via include_str!
 │  │  └─ web/                   #     scripts injected into the WhatsApp page
 │  │     ├─ bootstrap.js        #       early init + tauri API bridge
@@ -159,6 +191,7 @@ ZeroWhats/
 │  │     ├─ notifications.js    #       Notification intercept → zw://notify
 │  │     ├─ unread-badge.js     #       DOM badge count → zw://unread
 │  │     ├─ links.js            #       external links → zw://open-external
+│  │     ├─ update-banner.js     #       update-available banner → zw://action
 │  │     ├─ auto-lock.js        #       idle timer → zw://action{lock}
 │  │     ├─ rounded-corners.js  #       frameless window corner styling
 │  │     ├─ fullscreen.js       #       fullscreen toggle
