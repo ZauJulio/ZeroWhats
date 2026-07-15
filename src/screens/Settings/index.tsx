@@ -180,8 +180,11 @@ export default function Settings() {
                 disabled={updateStatus === "checking"}
                 onClick={async () => {
                   setUpdateStatus("checking");
+                  const start = Date.now();
                   try {
                     const r = await checkForUpdate();
+                    const elapsed = Date.now() - start;
+                    if (elapsed < 1000) await new Promise((res) => setTimeout(res, 1000 - elapsed));
                     if (r) {
                       setUpdateStatus("available");
                       emit("zw://action", { action: "update" });
@@ -193,6 +196,7 @@ export default function Settings() {
                   }
                 }}
               >
+                {updateStatus === "checking" && <span className={styles.spinner} />}
                 {updateStatus === "checking"
                   ? t.checking
                   : updateStatus === "upToDate"

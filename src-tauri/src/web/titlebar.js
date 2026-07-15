@@ -32,7 +32,6 @@
           prefs: "Preferências",
           shortcuts: "Atalhos de Teclado",
           about: "Sobre o ZeroWhats",
-          update: "Buscar Atualizações",
           menu: "Menu",
           minimize: "Minimizar",
           maximize: "Maximizar",
@@ -44,7 +43,6 @@
           prefs: "Preferences",
           shortcuts: "Keyboard Shortcuts",
           about: "About ZeroWhats",
-          update: "Check for Updates",
           menu: "Menu",
           minimize: "Minimize",
           maximize: "Maximize",
@@ -188,7 +186,6 @@
         { label: STRINGS.prefs, accelerator: "Ctrl+,", action: "settings" },
         { label: STRINGS.shortcuts, accelerator: "Ctrl+/", action: "shortcuts" },
         { label: STRINGS.about, action: "about" },
-        { label: STRINGS.update, action: "update" },
       ]);
     }
 

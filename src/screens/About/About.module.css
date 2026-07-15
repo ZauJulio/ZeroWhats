@@ -34,12 +34,13 @@
   align-items: center;
   gap: 0.429rem;
   margin-top: 0.571rem;
-  padding: 0.357rem 0.857rem;
+  padding: 0.071rem 0.857rem;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: transparent;
   color: var(--text);
-  font-size: 0.786rem;
+  font-size: 0.929rem;
+  font-weight: 600;
   cursor: pointer;
 
   &:hover {

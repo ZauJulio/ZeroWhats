@@ -1,6 +1,6 @@
 [package]
 name = "zerowhats"
-version = "1.5.0"
+version = "1.5.1"
 description = "ZeroWhats — a privacy-first WhatsApp Web desktop client"
 authors = ["ZauJulio"]
 edition = "2021"
