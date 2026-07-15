@@ -52,6 +52,12 @@
   -->
 
   <releases>
+    <release version="1.5.0" date="2026-07-08">
+      <description>
+        <p> Add update check and auto-update and some security fixes with
+        events schemas.</p>
+      </description>
+    </release>
     <release version="1.4.0" date="2026-07-08">
       <description>
         <p>About screen now shows the version dynamically, bump-version script
