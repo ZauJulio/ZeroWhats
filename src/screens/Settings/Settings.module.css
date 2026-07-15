@@ -70,7 +70,9 @@
   font-size: 0.9rem;
   font-weight: 500;
   opacity: 0.7;
-  transition: background 0.12s, opacity 0.12s;
+  transition:
+    background 0.12s,
+    opacity 0.12s;
 }
 
 .tab:hover {
