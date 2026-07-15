@@ -78,4 +78,14 @@ export interface Strings {
   wipeConfirmTitle: string;
   wipeConfirmBody: string;
   wipeConfirmOk: string;
+
+  updates: string;
+  checkForUpdates: string;
+  checkForUpdatesDesc: string;
+  upToDate: string;
+  updateAvailable: string;
+  newVersion: string;
+  releaseNotes: string;
+  downloadUpdate: string;
+  checking: string;
 }

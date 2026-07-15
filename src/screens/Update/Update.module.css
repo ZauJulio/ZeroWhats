@@ -1,0 +1,106 @@
+.update {
+  text-align: center;
+  padding-top: 0.429rem;
+
+  img {
+    width: 4.286rem;
+    height: 4.286rem;
+    margin-bottom: 0.429rem;
+  }
+
+  h1 {
+    font-size: 1.429rem;
+    margin: 0 0 0.286rem;
+  }
+}
+
+.versions {
+  display: flex;
+  justify-content: center;
+  gap: 0.857rem;
+  margin: 0.571rem 0 1rem;
+  font-size: 0.857rem;
+}
+
+.pill {
+  display: inline-block;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 0.071rem 0.714rem;
+  font-weight: 600;
+  font-size: 0.857rem;
+}
+
+.pillNew {
+  composes: pill;
+  background: var(--accent);
+  color: #fff;
+}
+
+.arrow {
+  color: var(--subtle);
+  font-size: 1.143rem;
+}
+
+.notes {
+  text-align: left;
+  max-height: 14.286rem;
+  overflow-y: auto;
+  padding: 0.857rem 1rem;
+  font-size: 0.857rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text);
+}
+
+.notesLabel {
+  text-align: left;
+  padding: 0 1rem;
+  font-size: 0.786rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--subtle);
+  margin-bottom: 0.286rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.571rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.primary {
+  padding: 0.571rem 1.429rem;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.929rem;
+
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+.loading {
+  color: var(--subtle);
+  padding: 2rem 0;
+}
+
+.upToDate {
+  color: var(--subtle);
+  padding: 1.5rem 0;
+  font-size: 0.929rem;
+}
+
+.checkmark {
+  color: #2ec27e;
+  font-size: 2.857rem;
+  margin-bottom: 0.571rem;
+}

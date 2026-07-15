@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { emit } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 import { AppWindow, Group, Row, Toggle, Select, ui } from "../../ui/components";
 import { cx } from "../../lib/cx";
@@ -11,6 +12,7 @@ import {
   setPassword,
   removePassword,
   setTheme,
+  checkForUpdate,
 } from "../../lib/api";
 import { applyTheme } from "../../lib/theme";
 import { useReveal } from "../../lib/window";
@@ -40,6 +42,9 @@ export default function Settings() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [removeError, setRemoveError] = useState(false);
   const [tab, setTab] = useState<Tab>("general");
+  const [updateStatus, setUpdateStatus] = useState<"idle" | "checking" | "upToDate" | "available">(
+    "idle",
+  );
 
   useEffect(() => {
     getConfig().then((c) => {
@@ -166,6 +171,35 @@ export default function Settings() {
                 </button>
               </Row>
             )}
+          </Group>
+
+          <Group title={t.updates}>
+            <Row title={t.checkForUpdates} subtitle={t.checkForUpdatesDesc}>
+              <button
+                className={ui.btn}
+                disabled={updateStatus === "checking"}
+                onClick={async () => {
+                  setUpdateStatus("checking");
+                  try {
+                    const r = await checkForUpdate();
+                    if (r) {
+                      setUpdateStatus("available");
+                      emit("zw://action", { action: "update" });
+                    } else {
+                      setUpdateStatus("upToDate");
+                    }
+                  } catch {
+                    setUpdateStatus("idle");
+                  }
+                }}
+              >
+                {updateStatus === "checking"
+                  ? t.checking
+                  : updateStatus === "upToDate"
+                    ? t.upToDate
+                    : t.checkForUpdates}
+              </button>
+            </Row>
           </Group>
         </>
       )}

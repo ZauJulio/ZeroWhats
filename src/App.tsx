@@ -3,6 +3,7 @@ import Settings from "./screens/Settings";
 import About from "./screens/About";
 import Shortcuts from "./screens/Shortcuts";
 import Lock from "./screens/Lock";
+import Update from "./screens/Update";
 import { useReportActivity } from "./lib/window";
 
 /**
@@ -27,6 +28,8 @@ export default function App() {
   switch (label) {
     case "about":
       return <About />;
+    case "update":
+      return <Update />;
     case "shortcuts":
       return <Shortcuts />;
     case "lock":

@@ -2,7 +2,7 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Permissions for the local (app://) content of every ZeroWhats window. Deliberately has no `remote` block: the WhatsApp Web origin loaded in `main` must only get the minimal grant in `whatsapp-remote.json`, never this broader set.",
-  "windows": ["main", "settings", "about", "shortcuts", "lock"],
+  "windows": ["main", "settings", "about", "shortcuts", "lock", "update"],
   "permissions": [
     "core:default",
     "core:app:allow-version",

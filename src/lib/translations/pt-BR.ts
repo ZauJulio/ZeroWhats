@@ -48,7 +48,8 @@ export const PT_BR: Strings = {
   notifPrivacyGeneric: "Só o remetente, ocultar mensagem",
   notifPrivacyHidden: "Ocultar notificações",
   hideOnUnfocus: "Ocultar Conteúdo ao Perder Foco",
-  hideOnUnfocusDesc: "Desfoca a janela quando ela perde o foco (protege capturas de tela e compartilhamento)",
+  hideOnUnfocusDesc:
+    "Desfoca a janela quando ela perde o foco (protege capturas de tela e compartilhamento)",
   advanced: "Avançado",
   hwAccel: "Aceleração de Hardware",
   hwAccelDesc: "Usa a GPU para renderizar o WhatsApp Web (requer reiniciar)",
@@ -81,4 +82,14 @@ export const PT_BR: Strings = {
   wipeConfirmBody:
     "Esta plataforma não tem redefinição de senha pelo sistema. Para recuperar o acesso, o ZeroWhats pode remover o bloqueio saindo do WhatsApp e apagando todos os dados locais (sessão, configurações e senha). Você precisará ler o QR code novamente. Continuar?",
   wipeConfirmOk: "Sair e apagar tudo",
+
+  updates: "Atualizações",
+  checkForUpdates: "Buscar Atualizações",
+  checkForUpdatesDesc: "Verificar se há uma versão mais recente do ZeroWhats",
+  upToDate: "Você está atualizado",
+  updateAvailable: "Atualização disponível",
+  newVersion: "Nova versão",
+  releaseNotes: "Notas de Lançamento",
+  downloadUpdate: "Baixar",
+  checking: "Verificando",
 };

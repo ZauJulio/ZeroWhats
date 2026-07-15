@@ -29,6 +29,37 @@
   font-size: 0.929rem;
 }
 
+.updateBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.429rem;
+  margin-top: 0.571rem;
+  padding: 0.357rem 0.857rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.786rem;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--hover);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .comments {
   color: var(--subtle);
   max-width: 21.429rem;

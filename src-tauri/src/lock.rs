@@ -12,11 +12,45 @@ use crate::{password, window};
 static LOCKED: AtomicBool = AtomicBool::new(false);
 
 pub fn is_locked() -> bool {
-    LOCKED.load(Ordering::Relaxed)
+    LOCKED.load(Ordering::Acquire)
 }
 
 fn set_locked(value: bool) {
-    LOCKED.store(value, Ordering::Relaxed);
+    LOCKED.store(value, Ordering::Release);
+}
+
+/// Server-side brute-force protection: tracks failed attempts and enforces a
+/// cooldown before the next try is accepted. The UI has its own cooldown too,
+/// but this one can't be bypassed via devtools.
+static FAIL_COUNT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+static LOCKOUT_UNTIL: OnceLock<Mutex<Instant>> = OnceLock::new();
+
+fn lockout_until() -> &'static Mutex<Instant> {
+    LOCKOUT_UNTIL.get_or_init(|| Mutex::new(Instant::now()))
+}
+
+fn record_failed_attempt() {
+    let count = FAIL_COUNT.fetch_add(1, Ordering::Relaxed) + 1;
+    if count >= 3 {
+        let delay = Duration::from_secs((1u64 << (count - 3).min(5)).min(30));
+        if let Ok(mut guard) = lockout_until().lock() {
+            *guard = Instant::now() + delay;
+        }
+    }
+}
+
+fn is_locked_out() -> bool {
+    lockout_until()
+        .lock()
+        .map(|g| Instant::now() < *g)
+        .unwrap_or(false)
+}
+
+fn reset_fail_count() {
+    FAIL_COUNT.store(0, Ordering::Relaxed);
+    if let Ok(mut guard) = lockout_until().lock() {
+        *guard = Instant::now();
+    }
 }
 
 /// Auto-lock is driven from Rust, not from JS inside a single webview: an
@@ -63,7 +97,10 @@ pub fn spawn_watcher(app: &AppHandle) {
             continue;
         }
 
-        let elapsed = last_activity().lock().map(|g| g.elapsed()).unwrap_or_default();
+        let elapsed = last_activity()
+            .lock()
+            .map(|g| g.elapsed())
+            .unwrap_or_default();
         if elapsed >= Duration::from_secs(minutes * 60) {
             let handle = app.clone();
             let _ = app.run_on_main_thread(move || lock(&handle));
@@ -89,9 +126,15 @@ pub fn lock(app: &AppHandle) {
 
 /// Verifies `input` against the stored hash (an empty/absent hash always
 /// unlocks) and, on success, reveals the main window. Returns whether it
-/// unlocked.
+/// unlocked. Server-side rate limiting rejects attempts during cooldown.
 pub fn unlock(app: &AppHandle, input: &str) -> bool {
     let cfg = Config::load(&config_path(app));
+
+    let has_password = cfg.password_hash.is_some();
+
+    if has_password && is_locked_out() {
+        return false;
+    }
 
     let ok = match &cfg.password_hash {
         Some(hash) => password::verify(input, hash),
@@ -99,6 +142,7 @@ pub fn unlock(app: &AppHandle, input: &str) -> bool {
     };
 
     if ok {
+        reset_fail_count();
         set_locked(false);
 
         if let Some(lock_win) = app.get_webview_window("lock") {
@@ -106,6 +150,8 @@ pub fn unlock(app: &AppHandle, input: &str) -> bool {
         }
 
         window::show_main(app);
+    } else if has_password {
+        record_failed_attempt();
     }
 
     ok

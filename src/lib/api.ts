@@ -51,3 +51,13 @@ export const getPlatform = () => invoke<string>("get_platform");
 export const setTheme = (theme: Theme) => invoke("set_theme", { theme });
 export const unlockApp = (password: string) => invoke<boolean>("unlock", { password });
 export const openUrl = (url: string) => invoke("open_url", { url });
+
+interface ReleaseInfo {
+  tag_name: string;
+  name: string;
+  body: string;
+  html_url: string;
+  published_at: string;
+}
+
+export const checkForUpdate = () => invoke<ReleaseInfo | null>("check_for_update");
