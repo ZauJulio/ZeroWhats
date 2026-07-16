@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 import { emit } from "@tauri-apps/api/event";
-import { ExternalLink, Globe, Code2, Bug, Mail, RefreshCw } from "lucide-react";
+import { ExternalLink, Globe, Code2, Bug, Mail } from "lucide-react";
 import { AppWindow, ui } from "../../ui/components";
 import { getConfig, openUrl, checkForUpdate } from "../../lib/api";
 import { applyTheme } from "../../lib/theme";
@@ -38,8 +38,11 @@ export default function About() {
 
   const handleCheckUpdate = async () => {
     setUpdateStatus("checking");
+    const start = Date.now();
     try {
       const r = await checkForUpdate();
+      const elapsed = Date.now() - start;
+      if (elapsed < 1000) await new Promise((res) => setTimeout(res, 1000 - elapsed));
       if (r) {
         setUpdateStatus("available");
         emit("zw://action", { action: "update" });
@@ -59,11 +62,14 @@ export default function About() {
         <div className={s.dev}>by ZauJulio</div>
         {version && <span className={s.pill}>{version}</span>}
         <button
-          className={s.updateBtn}
+          className={cx(
+            s.updateBtn,
+            (updateStatus === "upToDate" || updateStatus === "available") && s.updateBtnAccent,
+          )}
           onClick={handleCheckUpdate}
           disabled={updateStatus === "checking"}
         >
-          <RefreshCw size={14} className={updateStatus === "checking" ? s.spin : ""} />
+          {updateStatus === "checking" && <span className={s.spinner} />}
           {updateStatus === "checking"
             ? t.checking
             : updateStatus === "upToDate"

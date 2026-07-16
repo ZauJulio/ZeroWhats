@@ -20,27 +20,34 @@
 }
 
 .pill {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   border: 1px solid var(--accent);
   color: var(--accent);
   border-radius: 999px;
-  padding: 0.071rem 0.857rem;
+  height: 2rem;
+  padding: 0 0.857rem;
   font-weight: 600;
-  font-size: 0.929rem;
+  font-size: 0.857rem;
+  line-height: 1;
+  box-sizing: border-box;
 }
 
 .updateBtn {
   display: inline-flex;
   align-items: center;
   gap: 0.429rem;
-  margin-top: 0.571rem;
-  padding: 0.071rem 0.857rem;
+  margin-left: 0.429rem;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: transparent;
   color: var(--text);
-  font-size: 0.929rem;
+  height: 2rem;
+  padding: 0 0.857rem;
+  font-size: 0.857rem;
   font-weight: 600;
+  line-height: 1;
+  box-sizing: border-box;
   cursor: pointer;
 
   &:hover {
@@ -53,8 +60,23 @@
   }
 }
 
+.updateBtnAccent {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .spin {
-  animation: spin 1s linear infinite;
+  animation: spin 0.8s linear infinite;
+}
+
+.spinner {
+  display: inline-block;
+  width: 0.857rem;
+  height: 0.857rem;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
