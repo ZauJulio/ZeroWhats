@@ -161,6 +161,120 @@ fn mime_from_name(name: &str) -> String {
     .to_string()
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // --- percent_decode ---
+
+    #[test]
+    fn percent_decode_no_encoding() {
+        assert_eq!(percent_decode("/home/user/file.png"), "/home/user/file.png");
+    }
+
+    #[test]
+    fn percent_decode_spaces() {
+        assert_eq!(
+            percent_decode("/home/user/my%20file.png"),
+            "/home/user/my file.png"
+        );
+    }
+
+    #[test]
+    fn percent_decode_multiple() {
+        assert_eq!(percent_decode("a%20b%20c"), "a b c");
+    }
+
+    #[test]
+    fn percent_decode_special_chars() {
+        assert_eq!(percent_decode("%23hash"), "#hash");
+        assert_eq!(percent_decode("%25percent"), "%percent");
+    }
+
+    #[test]
+    fn percent_decode_incomplete_at_end() {
+        assert_eq!(percent_decode("abc%2"), "abc%2");
+        assert_eq!(percent_decode("abc%"), "abc%");
+    }
+
+    #[test]
+    fn percent_decode_invalid_hex() {
+        assert_eq!(percent_decode("%ZZtest"), "%ZZtest");
+    }
+
+    #[test]
+    fn percent_decode_empty() {
+        assert_eq!(percent_decode(""), "");
+    }
+
+    #[test]
+    fn percent_decode_utf8_path() {
+        assert_eq!(percent_decode("/home/user/%C3%A7%C3%A3o"), "/home/user/ção");
+    }
+
+    // --- mime_from_name ---
+
+    #[test]
+    fn mime_images() {
+        assert_eq!(mime_from_name("photo.png"), "image/png");
+        assert_eq!(mime_from_name("photo.jpg"), "image/jpeg");
+        assert_eq!(mime_from_name("photo.jpeg"), "image/jpeg");
+        assert_eq!(mime_from_name("photo.gif"), "image/gif");
+        assert_eq!(mime_from_name("photo.webp"), "image/webp");
+        assert_eq!(mime_from_name("photo.bmp"), "image/bmp");
+        assert_eq!(mime_from_name("photo.svg"), "image/svg+xml");
+    }
+
+    #[test]
+    fn mime_videos() {
+        assert_eq!(mime_from_name("video.mp4"), "video/mp4");
+        assert_eq!(mime_from_name("video.webm"), "video/webm");
+        assert_eq!(mime_from_name("video.mov"), "video/quicktime");
+    }
+
+    #[test]
+    fn mime_audio() {
+        assert_eq!(mime_from_name("song.mp3"), "audio/mpeg");
+        assert_eq!(mime_from_name("song.ogg"), "audio/ogg");
+        assert_eq!(mime_from_name("song.wav"), "audio/wav");
+    }
+
+    #[test]
+    fn mime_documents() {
+        assert_eq!(mime_from_name("doc.pdf"), "application/pdf");
+        assert_eq!(mime_from_name("doc.txt"), "text/plain");
+        assert_eq!(mime_from_name("doc.zip"), "application/zip");
+        assert_eq!(mime_from_name("doc.doc"), "application/msword");
+        assert_eq!(
+            mime_from_name("doc.docx"),
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        );
+        assert_eq!(mime_from_name("doc.xls"), "application/vnd.ms-excel");
+        assert_eq!(
+            mime_from_name("doc.xlsx"),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+    }
+
+    #[test]
+    fn mime_unknown() {
+        assert_eq!(mime_from_name("file.xyz"), "application/octet-stream");
+        assert_eq!(mime_from_name("noext"), "application/octet-stream");
+    }
+
+    #[test]
+    fn mime_case_insensitive() {
+        assert_eq!(mime_from_name("PHOTO.PNG"), "image/png");
+        assert_eq!(mime_from_name("video.MP4"), "video/mp4");
+    }
+
+    #[test]
+    fn mime_multiple_dots() {
+        assert_eq!(mime_from_name("archive.tar.gz"), "application/octet-stream");
+        assert_eq!(mime_from_name("photo.backup.jpg"), "image/jpeg");
+    }
+}
+
 /// Encodes arboard's RGBA8 image data as PNG bytes.
 fn encode_png(image: &arboard::ImageData) -> Option<Vec<u8>> {
     let width = u32::try_from(image.width).ok()?;

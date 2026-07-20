@@ -45,7 +45,10 @@ pub fn reset_with_admin() -> bool {
 #[cfg(target_os = "macos")]
 pub fn reset_with_admin() -> bool {
     std::process::Command::new("osascript")
-        .args(["-e", "do shell script \"true\" with administrator privileges"])
+        .args([
+            "-e",
+            "do shell script \"true\" with administrator privileges",
+        ])
         .status()
         .map(|status| status.success())
         .unwrap_or(false)
@@ -66,4 +69,65 @@ pub fn reset_with_admin() -> bool {
         .status()
         .map(|status| status.success())
         .unwrap_or(false)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hash_produces_argon2id() {
+        let h = hash("test123").unwrap();
+        assert!(h.starts_with("$argon2id$"));
+    }
+
+    #[test]
+    fn hash_different_salts() {
+        let h1 = hash("same").unwrap();
+        let h2 = hash("same").unwrap();
+        assert_ne!(h1, h2);
+    }
+
+    #[test]
+    fn verify_correct_password() {
+        let h = hash("correct").unwrap();
+        assert!(verify("correct", &h));
+    }
+
+    #[test]
+    fn verify_wrong_password() {
+        let h = hash("correct").unwrap();
+        assert!(!verify("wrong", &h));
+    }
+
+    #[test]
+    fn verify_empty_password() {
+        let h = hash("").unwrap();
+        assert!(verify("", &h));
+        assert!(!verify("notempty", &h));
+    }
+
+    #[test]
+    fn verify_garbage_hash_returns_false() {
+        assert!(!verify("anything", "not-a-valid-hash"));
+    }
+
+    #[test]
+    fn verify_empty_hash_returns_false() {
+        assert!(!verify("anything", ""));
+    }
+
+    #[test]
+    fn hash_unicode_password() {
+        let h = hash("senhaçãoéàü🔑").unwrap();
+        assert!(verify("senhaçãoéàü🔑", &h));
+        assert!(!verify("senhaçãoéàü", &h));
+    }
+
+    #[test]
+    fn hash_long_password() {
+        let long = "a".repeat(1000);
+        let h = hash(&long).unwrap();
+        assert!(verify(&long, &h));
+    }
 }

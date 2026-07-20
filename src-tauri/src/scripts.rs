@@ -85,3 +85,63 @@ pub const SPELLCHECK: &str = include_str!("web/spellcheck.js");
 
 /// Shows a banner when a new version is available (background check).
 pub const UPDATE_BANNER: &str = include_str!("web/update-banner.js");
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bootstrap_substitutes_theme() {
+        let script = bootstrap("dark", 0, false, true);
+        assert!(script.contains("\"dark\""));
+        assert!(!script.contains("__ZW_THEME__"));
+    }
+
+    #[test]
+    fn bootstrap_substitutes_auto_lock_minutes() {
+        let script = bootstrap("system", 15, false, true);
+        assert!(script.contains("15"));
+        assert!(!script.contains("__ZW_AUTO_LOCK_MINUTES__"));
+    }
+
+    #[test]
+    fn bootstrap_substitutes_has_password() {
+        let script = bootstrap("system", 0, true, true);
+        assert!(script.contains("true"));
+        assert!(!script.contains("__ZW_HAS_PASSWORD__"));
+    }
+
+    #[test]
+    fn bootstrap_substitutes_spellcheck() {
+        let script = bootstrap("system", 0, false, false);
+        assert!(!script.contains("__ZW_SPELLCHECK__"));
+    }
+
+    #[test]
+    fn bootstrap_no_placeholders_remain() {
+        let script = bootstrap("light", 5, true, false);
+        assert!(!script.contains("__ZW_"));
+    }
+
+    #[test]
+    fn all_script_constants_non_empty() {
+        assert!(!ROUNDED_CORNERS.is_empty());
+        assert!(!BACKGROUND_SYNC.is_empty());
+        assert!(!NOTIFICATIONS.is_empty());
+        assert!(!MPRIS.is_empty());
+        assert!(!UNREAD_BADGE.is_empty());
+        assert!(!DOWNLOAD.is_empty());
+        assert!(!AUTO_LOCK.is_empty());
+        assert!(!PRIVACY_BLUR.is_empty());
+        assert!(!TITLEBAR.is_empty());
+        assert!(!RESIZE_HANDLES.is_empty());
+        assert!(!CLIPBOARD_IMAGE.is_empty());
+        assert!(!LINKS.is_empty());
+        assert!(!FIND.is_empty());
+        assert!(!FULLSCREEN.is_empty());
+        assert!(!WIPE_SESSION.is_empty());
+        assert!(!DISABLE_MEDIA.is_empty());
+        assert!(!SPELLCHECK.is_empty());
+        assert!(!UPDATE_BANNER.is_empty());
+    }
+}

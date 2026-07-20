@@ -1,6 +1,6 @@
 [package]
 name = "zerowhats"
-version = "1.5.2"
+version = "1.5.3"
 description = "ZeroWhats — a privacy-first WhatsApp Web desktop client"
 authors = ["ZauJulio"]
 edition = "2021"
@@ -20,6 +20,8 @@ custom-protocol = ["tauri/custom-protocol"]
 tauri = { version = "2", features = ["macos-private-api", "tray-icon", "image-png"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+schemars = "0.8"
+jsonschema = "0.29"
 base64 = "0.22"
 # Reads image data from the system clipboard, which WebKitGTK itself can't hand
 # to the page (WebKit bug #218519) — used by the clipboard-image paste bridge.

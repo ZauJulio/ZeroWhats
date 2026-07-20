@@ -427,6 +427,114 @@ pub fn open_update(app: &AppHandle) {
     open_react_window(app, "update", "ZeroWhats — Update", (480.0, 520.0), false);
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // --- is_whatsapp_url ---
+
+    #[test]
+    fn whatsapp_main_url() {
+        let url: Url = "https://web.whatsapp.com".parse().unwrap();
+        assert!(is_whatsapp_url(&url));
+    }
+
+    #[test]
+    fn whatsapp_subdomain() {
+        let url: Url = "https://static.whatsapp.com/something".parse().unwrap();
+        assert!(is_whatsapp_url(&url));
+    }
+
+    #[test]
+    fn whatsapp_net_media() {
+        let url: Url = "https://mmg.whatsapp.net/media/123".parse().unwrap();
+        assert!(is_whatsapp_url(&url));
+    }
+
+    #[test]
+    fn whatsapp_net_subdomain() {
+        let url: Url = "https://pps.whatsapp.net/v/t61/photo.jpg".parse().unwrap();
+        assert!(is_whatsapp_url(&url));
+    }
+
+    #[test]
+    fn blob_url_allowed() {
+        let url: Url = "blob:https://web.whatsapp.com/12345".parse().unwrap();
+        assert!(is_whatsapp_url(&url));
+    }
+
+    #[test]
+    fn data_url_allowed() {
+        let url: Url = "data:text/html,<h1>hi</h1>".parse().unwrap();
+        assert!(is_whatsapp_url(&url));
+    }
+
+    #[test]
+    fn about_blank_allowed() {
+        let url: Url = "about:blank".parse().unwrap();
+        assert!(is_whatsapp_url(&url));
+    }
+
+    #[test]
+    fn external_url_rejected() {
+        let url: Url = "https://google.com".parse().unwrap();
+        assert!(!is_whatsapp_url(&url));
+    }
+
+    #[test]
+    fn similar_domain_rejected() {
+        let url: Url = "https://notwhatsapp.com".parse().unwrap();
+        assert!(!is_whatsapp_url(&url));
+    }
+
+    #[test]
+    fn whatsapp_in_path_rejected() {
+        let url: Url = "https://evil.com/whatsapp.com".parse().unwrap();
+        assert!(!is_whatsapp_url(&url));
+    }
+
+    // --- unique_path ---
+
+    #[test]
+    fn unique_path_no_conflict() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("new_file.txt");
+        assert_eq!(unique_path(path.clone()), path);
+    }
+
+    #[test]
+    fn unique_path_with_conflict() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("file.txt");
+        std::fs::write(&path, "existing").unwrap();
+
+        let result = unique_path(path.clone());
+        assert_eq!(result, dir.path().join("file (1).txt"));
+    }
+
+    #[test]
+    fn unique_path_multiple_conflicts() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("file.txt");
+        std::fs::write(&path, "").unwrap();
+        std::fs::write(dir.path().join("file (1).txt"), "").unwrap();
+        std::fs::write(dir.path().join("file (2).txt"), "").unwrap();
+
+        let result = unique_path(path);
+        assert_eq!(result, dir.path().join("file (3).txt"));
+    }
+
+    #[test]
+    fn unique_path_no_extension() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("README");
+        std::fs::write(&path, "").unwrap();
+
+        let result = unique_path(path);
+        assert_eq!(result, dir.path().join("README (1)"));
+    }
+}
+
 pub fn open_shortcuts(app: &AppHandle) {
     open_react_window(
         app,

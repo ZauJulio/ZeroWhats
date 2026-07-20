@@ -205,3 +205,45 @@ pub fn effective_auto_lock_minutes(cfg: &Config) -> u32 {
         0
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn auto_lock_disabled_without_password() {
+        let mut cfg = Config::default();
+        cfg.auto_lock_minutes = Some(10);
+        assert_eq!(effective_auto_lock_minutes(&cfg), 0);
+    }
+
+    #[test]
+    fn auto_lock_enabled_with_password() {
+        let mut cfg = Config::default();
+        cfg.password_hash = Some("hash".into());
+        cfg.auto_lock_minutes = Some(10);
+        assert_eq!(effective_auto_lock_minutes(&cfg), 10);
+    }
+
+    #[test]
+    fn auto_lock_none_with_password_returns_zero() {
+        let mut cfg = Config::default();
+        cfg.password_hash = Some("hash".into());
+        cfg.auto_lock_minutes = None;
+        assert_eq!(effective_auto_lock_minutes(&cfg), 0);
+    }
+
+    #[test]
+    fn auto_lock_zero_with_password() {
+        let mut cfg = Config::default();
+        cfg.password_hash = Some("hash".into());
+        cfg.auto_lock_minutes = Some(0);
+        assert_eq!(effective_auto_lock_minutes(&cfg), 0);
+    }
+
+    #[test]
+    fn auto_lock_default_config() {
+        let cfg = Config::default();
+        assert_eq!(effective_auto_lock_minutes(&cfg), 0);
+    }
+}

@@ -46,6 +46,86 @@ pub fn check_for_update(app: tauri::AppHandle) -> Option<ReleaseInfo> {
     check_update(&version)
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_semver_plain() {
+        assert_eq!(parse_semver("1.2.3"), Some((1, 2, 3)));
+    }
+
+    #[test]
+    fn parse_semver_with_v_prefix() {
+        assert_eq!(parse_semver("v1.5.2"), Some((1, 5, 2)));
+    }
+
+    #[test]
+    fn parse_semver_zero() {
+        assert_eq!(parse_semver("0.0.0"), Some((0, 0, 0)));
+    }
+
+    #[test]
+    fn parse_semver_large_numbers() {
+        assert_eq!(parse_semver("v100.200.300"), Some((100, 200, 300)));
+    }
+
+    #[test]
+    fn parse_semver_invalid_missing_patch() {
+        assert_eq!(parse_semver("1.2"), None);
+    }
+
+    #[test]
+    fn parse_semver_invalid_empty() {
+        assert_eq!(parse_semver(""), None);
+    }
+
+    #[test]
+    fn parse_semver_invalid_text() {
+        assert_eq!(parse_semver("abc"), None);
+    }
+
+    #[test]
+    fn parse_semver_invalid_non_numeric() {
+        assert_eq!(parse_semver("v1.x.3"), None);
+    }
+
+    #[test]
+    fn semver_comparison_newer() {
+        let remote = parse_semver("v2.0.0").unwrap();
+        let local = parse_semver("v1.5.2").unwrap();
+        assert!(remote > local);
+    }
+
+    #[test]
+    fn semver_comparison_same() {
+        let remote = parse_semver("v1.5.2").unwrap();
+        let local = parse_semver("v1.5.2").unwrap();
+        assert!(!(remote > local));
+    }
+
+    #[test]
+    fn semver_comparison_older() {
+        let remote = parse_semver("v1.4.0").unwrap();
+        let local = parse_semver("v1.5.2").unwrap();
+        assert!(!(remote > local));
+    }
+
+    #[test]
+    fn semver_comparison_patch_bump() {
+        let remote = parse_semver("v1.5.3").unwrap();
+        let local = parse_semver("v1.5.2").unwrap();
+        assert!(remote > local);
+    }
+
+    #[test]
+    fn semver_comparison_minor_bump() {
+        let remote = parse_semver("v1.6.0").unwrap();
+        let local = parse_semver("v1.5.9").unwrap();
+        assert!(remote > local);
+    }
+}
+
 pub fn start_background_check(app: &tauri::AppHandle) {
     let handle = app.clone();
     std::thread::spawn(move || {
